@@ -1,9 +1,10 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit } from 'lucide-react';
+import { Plus, Trash2, Edit, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface Connection {
   id: number;
@@ -19,9 +20,28 @@ interface Props {
 }
 
 export default function Index({ connections }: Props) {
-  const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this connection?')) {
-      router.delete(`/connections/${id}`);
+  const { flash } = usePage<any>().props;
+  const [showFlash, setShowFlash] = useState(false);
+
+  useEffect(() => {
+    if (flash?.success || flash?.error) {
+      setShowFlash(true);
+      const timer = setTimeout(() => setShowFlash(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [flash]);
+
+  const handleDelete = (id: number, name: string) => {
+    if (confirm(`Are you sure you want to delete "${name}"?\n\nThis will fail if there are active backup operations using this connection.`)) {
+      router.delete(`/connections/${id}`, {
+        onError: (errors) => {
+          if (errors.error) {
+            alert(`Failed to delete connection:\n\n${errors.error}`);
+          } else {
+            alert('Failed to delete connection. Please try again.');
+          }
+        },
+      });
     }
   };
 
@@ -42,6 +62,23 @@ export default function Index({ connections }: Props) {
 
       <div className="py-12">
         <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+          {/* Flash Messages */}
+          {showFlash && flash?.success && (
+            <div className="mb-6 flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-4 text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-200">
+              <CheckCircle2 className="h-5 w-5" />
+              <p>{flash.success}</p>
+              <button onClick={() => setShowFlash(false)} className="ml-auto">×</button>
+            </div>
+          )}
+          
+          {showFlash && flash?.error && (
+            <div className="mb-6 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+              <AlertCircle className="h-5 w-5" />
+              <p>{flash.error}</p>
+              <button onClick={() => setShowFlash(false)} className="ml-auto">×</button>
+            </div>
+          )}
+
           <div className="mb-6 flex items-center justify-between">
             <h1 className="text-3xl font-bold">Connections</h1>
             <Link href="/connections/create">
@@ -79,12 +116,18 @@ export default function Index({ connections }: Props) {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleDelete(connection.id)}
+                      onClick={() => handleDelete(connection.id, connection.name)}
+                      title="Delete connection (only if no backup operations exist)"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                     </Button>
                   </div>
+                  {!connection.is_active && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      This connection is inactive and won't be used for new backups
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             ))}

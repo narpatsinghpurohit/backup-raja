@@ -51,16 +51,21 @@ class ConnectionService
 
     public function deleteConnection(Connection $connection): void
     {
-        // Check for active backup operations
-        $hasActiveOperations = $connection->sourceBackupOperations()
-            ->whereIn('status', ['pending', 'running', 'paused'])
-            ->exists()
-            || $connection->destinationBackupOperations()
-            ->whereIn('status', ['pending', 'running', 'paused'])
-            ->exists();
+        // Check for ANY backup operations (including completed ones due to foreign key constraints)
+        $totalSourceBackups = $connection->sourceBackupOperations()->count();
+        $totalDestinationBackups = $connection->destinationBackupOperations()->count();
+        $totalRestores = $connection->restoreOperations()->count();
+        
+        $totalOperations = $totalSourceBackups + $totalDestinationBackups + $totalRestores;
 
-        if ($hasActiveOperations) {
-            throw new \Exception('Cannot delete connection with active backup operations');
+        if ($totalOperations > 0) {
+            throw new \Exception(
+                "Cannot delete connection. This connection is referenced by {$totalOperations} backup/restore operation(s) in the database.\n\n" .
+                "To delete this connection, you would need to:\n" .
+                "1. Delete all backup operations using this connection, or\n" .
+                "2. Modify the database to allow cascade deletion\n\n" .
+                "For now, you can mark this connection as inactive instead of deleting it."
+            );
         }
 
         $connection->delete();
