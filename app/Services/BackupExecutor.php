@@ -25,7 +25,7 @@ class BackupExecutor
         }
     }
 
-    public function execute(BackupOperation $operation): void
+    public function execute(BackupOperation $operation, LogService $logService): void
     {
         $sourceConnection = $operation->sourceConnection;
         $destinationConnection = $operation->destinationConnection;
@@ -34,33 +34,54 @@ class BackupExecutor
         $backupAdapter = $this->getBackupAdapter($sourceConnection);
 
         // Create backup archive
-        $archivePath = $backupAdapter->backup($sourceConnection, $this->tempPath);
+        $logService->log($operation, 'info', 'Starting backup process...');
+        $archivePath = $backupAdapter->backup($sourceConnection, $this->tempPath, $operation, $logService);
+
+        $archiveSize = filesize($archivePath);
+        $logService->log($operation, 'info', "Archive created: " . basename($archivePath));
+        $logService->log($operation, 'info', "Archive size: " . $this->formatBytes($archiveSize));
 
         // Generate metadata
         $metadata = [
             'timestamp' => now()->toIso8601String(),
             'source_type' => $sourceConnection->type,
             'source_name' => $sourceConnection->name,
-            'archive_size' => filesize($archivePath),
+            'archive_size' => $archiveSize,
         ];
 
         // Get appropriate destination adapter
         $destinationAdapter = $this->getDestinationAdapter($destinationConnection);
 
         // Upload to destination
-        $uploadedPath = $destinationAdapter->upload($archivePath, $destinationConnection);
+        $logService->log($operation, 'info', 'Uploading to destination...');
+        $uploadedPath = $destinationAdapter->upload($archivePath, $destinationConnection, $operation, $logService);
+        
+        $logService->log($operation, 'info', 'Upload completed');
+        $logService->log($operation, 'info', "Final location: {$uploadedPath}");
 
         // Update operation with results
         $operation->update([
             'archive_path' => $uploadedPath,
-            'archive_size' => filesize($archivePath),
+            'archive_size' => $archiveSize,
             'metadata' => $metadata,
         ]);
 
         // Clean up local archive
         if (file_exists($archivePath)) {
             unlink($archivePath);
+            $logService->log($operation, 'info', 'Temporary files cleaned up');
         }
+    }
+    
+    private function formatBytes(int $bytes): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        $bytes /= (1 << (10 * $pow));
+        
+        return round($bytes, 2) . ' ' . $units[$pow];
     }
 
     public function getBackupAdapter(Connection $connection): BackupAdapterInterface

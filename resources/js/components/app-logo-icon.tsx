@@ -2,12 +2,53 @@ import { SVGAttributes } from 'react';
 
 export default function AppLogoIcon(props: SVGAttributes<SVGElement>) {
     return (
-        <svg {...props} viewBox="0 0 40 42" xmlns="http://www.w3.org/2000/svg">
+        <svg {...props} viewBox="0 0 64 80" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            {/* Crown */}
+            <path d="M22 8L26 2L32 6L38 2L42 8L40 10H24L22 8Z" />
+            <circle cx="26" cy="2" r="2" />
+            <circle cx="32" cy="4" r="2" />
+            <circle cx="38" cy="2" r="2" />
+            
+            {/* Shield outline */}
             <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M17.2 5.63325L8.6 0.855469L0 5.63325V32.1434L16.2 41.1434L32.4 32.1434V23.699L40 19.4767V9.85547L31.4 5.07769L22.8 9.85547V18.2999L17.2 21.411V5.63325ZM38 18.2999L32.4 21.411V15.2545L38 12.1434V18.2999ZM36.9409 10.4439L31.4 13.5221L25.8591 10.4439L31.4 7.36561L36.9409 10.4439ZM24.8 18.2999V12.1434L30.4 15.2545V21.411L24.8 18.2999ZM23.8 20.0323L29.3409 23.1105L16.2 30.411L10.6591 27.3328L23.8 20.0323ZM7.6 27.9212L15.2 32.1434V38.2999L2 30.9666V7.92116L7.6 11.0323V27.9212ZM8.6 9.29991L3.05913 6.22165L8.6 3.14339L14.1409 6.22165L8.6 9.29991ZM30.4 24.8101L17.2 32.1434V38.2999L30.4 30.9666V24.8101ZM9.6 11.0323L15.2 7.92117V22.5221L9.6 25.6333V11.0323Z"
+                d="M32 12C20 12 10 14 10 14V42C10 56 32 72 32 72C32 72 54 56 54 42V14C54 14 44 12 32 12Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
             />
+            
+            {/* Inner shield accent */}
+            <path
+                d="M32 20C24 20 18 21 18 21V40C18 50 32 62 32 62C32 62 46 50 46 40V21C46 21 40 20 32 20Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+            />
+            
+            {/* Server/Database box */}
+            <rect x="22" y="26" width="20" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            <rect x="22" y="34" width="20" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            
+            {/* Server indicator dots */}
+            <circle cx="38" cy="29" r="1" fill="#f97316" />
+            <circle cx="35" cy="29" r="1" fill="#f97316" />
+            <circle cx="38" cy="37" r="1" fill="#f97316" />
+            <circle cx="35" cy="37" r="1" fill="#f97316" />
+            
+            {/* Server lines */}
+            <line x1="24" y1="29" x2="31" y2="29" stroke="currentColor" strokeWidth="1" />
+            <line x1="24" y1="37" x2="31" y2="37" stroke="currentColor" strokeWidth="1" />
+            
+            {/* Cloud with upload arrow */}
+            <path
+                d="M30 52C27 52 25 50 25 48C25 46 27 44 30 44C30 42 32 40 35 40C38 40 40 42 40 45C42 45 43 47 43 49C43 51 41 52 39 52H30Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+            />
+            
+            {/* Upload arrow */}
+            <path d="M35 51V46M33 48L35 45L37 48" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
     );
 }

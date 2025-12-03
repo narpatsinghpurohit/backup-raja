@@ -7,11 +7,15 @@ use Illuminate\Support\Facades\Storage;
 
 class LocalStorageDestinationAdapter implements DestinationAdapterInterface
 {
-    public function upload(string $archivePath, Connection $destination): string
+    public function upload(string $archivePath, Connection $destination, \App\Models\BackupOperation $operation, \App\Services\LogService $logService): string
     {
         $credentials = $destination->credentials;
         $disk = $credentials['disk'] ?? 'local';
         $path = $credentials['path'] ?? 'backups';
+        
+        $logService->log($operation, 'info', "Destination type: Local Storage");
+        $logService->log($operation, 'info', "Storage disk: {$disk}");
+        $logService->log($operation, 'info', "Storage path: {$path}");
         
         // Ensure the path doesn't start with a slash for Laravel Storage
         $path = ltrim($path, '/');
@@ -19,11 +23,34 @@ class LocalStorageDestinationAdapter implements DestinationAdapterInterface
         $fileName = basename($archivePath);
         $fullPath = $path . '/' . $fileName;
         
+        $fileSize = filesize($archivePath);
+        $logService->log($operation, 'info', "Uploading file: {$fileName}");
+        $logService->log($operation, 'info', "File size: " . $this->formatBytes($fileSize));
+        
+        $startTime = microtime(true);
+        
         // Upload the file to Laravel storage
         $fileContents = file_get_contents($archivePath);
         Storage::disk($disk)->put($fullPath, $fileContents);
         
+        $duration = round(microtime(true) - $startTime, 2);
+        $logService->log($operation, 'info', "Upload completed in {$duration} seconds");
+        
         // Return the storage path
-        return Storage::disk($disk)->path($fullPath);
+        $storagePath = Storage::disk($disk)->path($fullPath);
+        $logService->log($operation, 'info', "File stored at: {$storagePath}");
+        
+        return $storagePath;
+    }
+    
+    private function formatBytes(int $bytes): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        $bytes /= (1 << (10 * $pow));
+        
+        return round($bytes, 2) . ' ' . $units[$pow];
     }
 }
