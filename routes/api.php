@@ -3,7 +3,8 @@
 use App\Http\Controllers\Api\BackupLogController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum'])->group(function () {
+// Use web middleware for session-based authentication with Inertia
+Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/backups/{backup}/logs', [BackupLogController::class, 'index']);
     Route::get('/restores/{restore}/logs', [BackupLogController::class, 'restoreLogs']);
 });

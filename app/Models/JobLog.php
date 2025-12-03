@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class JobLog extends Model
 {
-    public $timestamps = false;
+    const UPDATED_AT = null; // Only use created_at, not updated_at
 
     protected $fillable = [
         'loggable_type',

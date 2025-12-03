@@ -27,6 +27,8 @@ interface FormErrors {
   'credentials.uri'?: string;
   'credentials.database'?: string;
   'credentials.access_token'?: string;
+  'credentials.disk'?: string;
+  'credentials.path'?: string;
   error?: string;
 }
 
@@ -45,6 +47,8 @@ export default function Edit({ connection }: Props) {
       access_token: '', // Don't pre-fill tokens for security
       refresh_token: '',
       folder_id: connection.credentials?.folder_id || '',
+      disk: connection.credentials?.disk || 'local',
+      path: connection.credentials?.path || 'backups',
     },
   });
   const [updateCredentials, setUpdateCredentials] = useState(false);
@@ -79,12 +83,17 @@ export default function Edit({ connection }: Props) {
           refresh_token: formData.credentials.refresh_token,
           folder_id: formData.credentials.folder_id,
         };
+      } else if (connection.type === 'local_storage') {
+        filteredCredentials = {
+          disk: formData.credentials.disk,
+          path: formData.credentials.path,
+        };
       }
       payload.credentials = filteredCredentials;
       payload.type = connection.type;
     }
 
-    router.put(`/connections/${connection.id}`, payload, {
+    router.put(`/connections/${connection.id}`, payload as any, {
       preserveScroll: true,
       onError: (errors) => {
         setErrors(errors as FormErrors);
@@ -109,6 +118,7 @@ export default function Edit({ connection }: Props) {
       mongodb: 'MongoDB',
       google_drive: 'Google Drive',
       s3_destination: 'S3 Destination',
+      local_storage: 'Local Storage',
     };
     return labels[type] || type;
   };
@@ -249,6 +259,39 @@ export default function Edit({ connection }: Props) {
                             value={formData.credentials.folder_id}
                             onChange={(e) => handleCredentialChange('folder_id', e.target.value)}
                           />
+                        </div>
+                      </>
+                    )}
+
+                    {connection.type === 'local_storage' && (
+                      <>
+                        <div>
+                          <Label htmlFor="disk">Storage Disk</Label>
+                          <select
+                            id="disk"
+                            value={formData.credentials.disk}
+                            onChange={(e) => handleCredentialChange('disk', e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            required
+                          >
+                            <option value="local">Local (storage/app)</option>
+                            <option value="public">Public (storage/app/public)</option>
+                          </select>
+                          {errors['credentials.disk'] && <p className="text-sm text-red-500">{errors['credentials.disk']}</p>}
+                        </div>
+                        <div>
+                          <Label htmlFor="path">Storage Path</Label>
+                          <Input
+                            id="path"
+                            value={formData.credentials.path}
+                            onChange={(e) => handleCredentialChange('path', e.target.value)}
+                            placeholder="backups"
+                            required
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Path relative to the storage disk (e.g., "backups" or "backups/mongodb")
+                          </p>
+                          {errors['credentials.path'] && <p className="text-sm text-red-500">{errors['credentials.path']}</p>}
                         </div>
                       </>
                     )}

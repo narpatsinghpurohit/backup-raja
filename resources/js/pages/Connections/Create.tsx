@@ -18,6 +18,8 @@ interface FormErrors {
   'credentials.uri'?: string;
   'credentials.database'?: string;
   'credentials.access_token'?: string;
+  'credentials.disk'?: string;
+  'credentials.path'?: string;
   error?: string;
 }
 
@@ -37,6 +39,8 @@ export default function Create() {
       access_token: '',
       refresh_token: '',
       folder_id: '',
+      disk: 'local',
+      path: 'backups',
     },
   });
 
@@ -64,6 +68,11 @@ export default function Create() {
         access_token: formData.credentials.access_token,
         refresh_token: formData.credentials.refresh_token,
         folder_id: formData.credentials.folder_id,
+      };
+    } else if (selectedType === 'local_storage') {
+      filteredCredentials = {
+        disk: formData.credentials.disk,
+        path: formData.credentials.path,
       };
     }
     
@@ -128,6 +137,7 @@ export default function Create() {
                       <SelectItem value="s3_destination">S3 Destination</SelectItem>
                       <SelectItem value="mongodb">MongoDB</SelectItem>
                       <SelectItem value="google_drive">Google Drive</SelectItem>
+                      <SelectItem value="local_storage">Local Storage</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
@@ -232,6 +242,41 @@ export default function Create() {
                         value={formData.credentials.folder_id}
                         onChange={(e) => updateCredentials('folder_id', e.target.value)}
                       />
+                    </div>
+                  </>
+                )}
+
+                {selectedType === 'local_storage' && (
+                  <>
+                    <div>
+                      <Label htmlFor="disk">Storage Disk</Label>
+                      <Select 
+                        value={formData.credentials.disk} 
+                        onValueChange={(value) => updateCredentials('disk', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="local">Local (storage/app)</SelectItem>
+                          <SelectItem value="public">Public (storage/app/public)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors['credentials.disk'] && <p className="text-sm text-red-500">{errors['credentials.disk']}</p>}
+                    </div>
+                    <div>
+                      <Label htmlFor="path">Storage Path</Label>
+                      <Input
+                        id="path"
+                        value={formData.credentials.path}
+                        onChange={(e) => updateCredentials('path', e.target.value)}
+                        placeholder="backups"
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Path relative to the storage disk (e.g., "backups" or "backups/mongodb")
+                      </p>
+                      {errors['credentials.path'] && <p className="text-sm text-red-500">{errors['credentials.path']}</p>}
                     </div>
                   </>
                 )}

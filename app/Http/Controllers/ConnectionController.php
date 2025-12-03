@@ -63,6 +63,11 @@ class ConnectionController extends Controller
                 'folder_id' => $credentials['folder_id'] ?? '',
                 // Don't expose tokens
             ];
+        } elseif ($connection->type === 'local_storage') {
+            $safeCredentials = [
+                'disk' => $credentials['disk'] ?? 'local',
+                'path' => $credentials['path'] ?? 'backups',
+            ];
         }
 
         return Inertia::render('Connections/Edit', [

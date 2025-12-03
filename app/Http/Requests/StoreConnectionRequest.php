@@ -15,7 +15,7 @@ class StoreConnectionRequest extends FormRequest
     {
         $rules = [
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'in:s3,mongodb,google_drive,s3_destination'],
+            'type' => ['required', 'in:s3,mongodb,google_drive,s3_destination,local_storage'],
             'credentials' => ['required', 'array'],
         ];
 
@@ -34,6 +34,9 @@ class StoreConnectionRequest extends FormRequest
             $rules['credentials.access_token'] = ['required', 'string'];
             $rules['credentials.refresh_token'] = ['nullable', 'string'];
             $rules['credentials.folder_id'] = ['nullable', 'string'];
+        } elseif ($type === 'local_storage') {
+            $rules['credentials.disk'] = ['required', 'string', 'in:local,public'];
+            $rules['credentials.path'] = ['required', 'string'];
         }
 
         return $rules;
@@ -53,6 +56,9 @@ class StoreConnectionRequest extends FormRequest
             'credentials.uri.required' => 'The connection URI is required.',
             'credentials.database.required' => 'The database name is required.',
             'credentials.access_token.required' => 'The access token is required.',
+            'credentials.disk.required' => 'The storage disk is required.',
+            'credentials.disk.in' => 'The storage disk must be either local or public.',
+            'credentials.path.required' => 'The storage path is required.',
         ];
     }
 }

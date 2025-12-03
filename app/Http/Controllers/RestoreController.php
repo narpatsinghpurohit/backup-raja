@@ -17,7 +17,7 @@ class RestoreController extends Controller
 
     public function create(BackupOperation $backup)
     {
-        $destinations = Connection::whereIn('type', ['s3_destination', 'mongodb'])->get();
+        $destinations = Connection::whereIn('type', ['s3_destination', 'mongodb', 'local_storage'])->get();
 
         return Inertia::render('Restores/Create', [
             'backup' => $backup->load('sourceConnection'),

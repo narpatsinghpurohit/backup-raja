@@ -7,6 +7,7 @@ use App\Models\RestoreOperation;
 use App\Services\Adapters\RestoreAdapterInterface;
 use App\Services\Adapters\S3RestoreAdapter;
 use App\Services\Adapters\MongoRestoreAdapter;
+use App\Services\Adapters\LocalStorageRestoreAdapter;
 
 class RestoreExecutor
 {
@@ -63,6 +64,7 @@ class RestoreExecutor
         return match ($connection->type) {
             's3', 's3_destination' => new S3RestoreAdapter(),
             'mongodb' => new MongoRestoreAdapter(),
+            'local_storage' => new LocalStorageRestoreAdapter(),
             default => throw new \InvalidArgumentException("Unsupported restore type: {$connection->type}"),
         };
     }

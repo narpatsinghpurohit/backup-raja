@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
 interface LogEntry {
   id: number;
@@ -17,29 +19,36 @@ interface Props {
 export default function TerminalLog({ operationId, operationType, initialLogs = [] }: Props) {
   const [logs, setLogs] = useState<LogEntry[]>(initialLogs);
   const [status, setStatus] = useState<string>('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const logContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const pollLogs = async () => {
-      const lastLogId = logs.length > 0 ? logs[logs.length - 1].id : 0;
-      const endpoint = operationType === 'backup' 
-        ? `/api/backups/${operationId}/logs`
-        : `/api/restores/${operationId}/logs`;
+  const pollLogs = async () => {
+    const lastLogId = logs.length > 0 ? logs[logs.length - 1].id : 0;
+    const endpoint = operationType === 'backup' 
+      ? `/api/backups/${operationId}/logs`
+      : `/api/restores/${operationId}/logs`;
 
-      try {
-        const response = await fetch(`${endpoint}?since_id=${lastLogId}`);
-        const data = await response.json();
+    try {
+      const response = await fetch(`${endpoint}?since_id=${lastLogId}`);
+      const data = await response.json();
 
-        if (data.logs && data.logs.length > 0) {
-          setLogs((prev) => [...prev, ...data.logs]);
-        }
-
-        setStatus(data.status);
-      } catch (error) {
-        console.error('Failed to fetch logs:', error);
+      if (data.logs && data.logs.length > 0) {
+        setLogs((prev) => [...prev, ...data.logs]);
       }
-    };
 
+      setStatus(data.status);
+    } catch (error) {
+      console.error('Failed to fetch logs:', error);
+    }
+  };
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    await pollLogs();
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
+
+  useEffect(() => {
     // Poll every 10 seconds
     const interval = setInterval(pollLogs, 10000);
     
@@ -72,7 +81,19 @@ export default function TerminalLog({ operationId, operationType, initialLogs = 
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Operation Logs</span>
-          <span className="text-sm font-normal text-muted-foreground">Status: {status}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-normal text-muted-foreground">Status: {status}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>

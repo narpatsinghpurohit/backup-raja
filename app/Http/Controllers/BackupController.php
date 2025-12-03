@@ -36,7 +36,7 @@ class BackupController extends Controller
     public function create()
     {
         $sources = Connection::whereIn('type', ['s3', 'mongodb'])->get();
-        $destinations = Connection::whereIn('type', ['s3_destination', 'google_drive'])->get();
+        $destinations = Connection::whereIn('type', ['s3_destination', 'google_drive', 'local_storage'])->get();
 
         return Inertia::render('Backups/Create', [
             'sources' => $sources,

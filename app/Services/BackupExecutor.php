@@ -10,6 +10,7 @@ use App\Services\Adapters\S3BackupAdapter;
 use App\Services\Adapters\MongoBackupAdapter;
 use App\Services\Adapters\S3DestinationAdapter;
 use App\Services\Adapters\GoogleDriveDestinationAdapter;
+use App\Services\Adapters\LocalStorageDestinationAdapter;
 use Illuminate\Support\Facades\Storage;
 
 class BackupExecutor
@@ -76,6 +77,7 @@ class BackupExecutor
         return match ($connection->type) {
             's3', 's3_destination' => new S3DestinationAdapter(),
             'google_drive' => new GoogleDriveDestinationAdapter(),
+            'local_storage' => new LocalStorageDestinationAdapter(),
             default => throw new \InvalidArgumentException("Unsupported destination type: {$connection->type}"),
         };
     }
