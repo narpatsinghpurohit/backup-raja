@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import TerminalLog from '@/components/TerminalLog';
 import { Pause, Play, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface BackupOperation {
   id: number;
@@ -29,7 +30,9 @@ interface Props {
   backup: BackupOperation;
 }
 
-export default function Show({ backup }: Props) {
+export default function Show({ backup: initialBackup }: Props) {
+  const [backup, setBackup] = useState(initialBackup);
+
   const handlePause = () => {
     router.post(`/backups/${backup.id}/pause`);
   };
@@ -43,6 +46,25 @@ export default function Show({ backup }: Props) {
       router.post(`/backups/${backup.id}/cancel`);
     }
   };
+
+  // Poll for backup status updates
+  useEffect(() => {
+    const pollStatus = async () => {
+      try {
+        const response = await fetch(`/api/backups/${backup.id}/status`);
+        const data = await response.json();
+        setBackup((prev) => ({ ...prev, ...data }));
+      } catch (error) {
+        console.error('Failed to fetch backup status:', error);
+      }
+    };
+
+    // Only poll if backup is in a non-final state
+    if (['pending', 'running', 'paused'].includes(backup.status)) {
+      const interval = setInterval(pollStatus, 5000); // Poll every 5 seconds
+      return () => clearInterval(interval);
+    }
+  }, [backup.id, backup.status]);
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {

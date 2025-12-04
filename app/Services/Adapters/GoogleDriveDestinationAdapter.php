@@ -42,24 +42,60 @@ class GoogleDriveDestinationAdapter implements DestinationAdapterInterface
         ]);
 
         $startTime = microtime(true);
-        $content = file_get_contents($archivePath);
         
-        $file = $driveService->files->create($fileMetadata, [
-            'data' => $content,
-            'mimeType' => 'application/gzip',
-            'uploadType' => 'multipart',
+        // Use resumable upload for large files (streams in chunks, no memory issues)
+        $client->setDefer(true);
+        
+        // Create the request for resumable upload
+        $request = $driveService->files->create($fileMetadata, [
+            'uploadType' => 'resumable',
             'fields' => 'id,webViewLink',
         ]);
+        
+        // Create media upload with 5MB chunk size
+        $chunkSizeBytes = 5 * 1024 * 1024; // 5MB chunks
+        $media = new \Google\Http\MediaFileUpload(
+            $client,
+            $request,
+            'application/gzip',
+            null,
+            true,
+            $chunkSizeBytes
+        );
+        $media->setFileSize($fileSize);
+
+        // Open file handle (doesn't load into memory)
+        $handle = fopen($archivePath, 'rb');
+        $uploadedBytes = 0;
+        $lastLoggedPercent = 0;
+
+        // Upload in chunks
+        while (!feof($handle)) {
+            $chunk = fread($handle, $chunkSizeBytes);
+            $status = $media->nextChunk($chunk);
+            
+            $uploadedBytes += strlen($chunk);
+            $percent = round(($uploadedBytes / $fileSize) * 100);
+            
+            // Log progress every 10%
+            if ($percent >= $lastLoggedPercent + 10) {
+                $logService->log($operation, 'info', "Upload progress: {$percent}% ({$this->formatBytes($uploadedBytes)} / {$this->formatBytes($fileSize)})");
+                $lastLoggedPercent = $percent;
+            }
+        }
+
+        fclose($handle);
+        $client->setDefer(false);
 
         $duration = round(microtime(true) - $startTime, 2);
         $logService->log($operation, 'info', "Google Drive upload completed in {$duration} seconds");
-        $logService->log($operation, 'info', "File ID: {$file->id}");
+        $logService->log($operation, 'info', "File ID: {$status->id}");
         
-        if ($file->webViewLink) {
-            $logService->log($operation, 'info', "View link: {$file->webViewLink}");
+        if ($status->webViewLink) {
+            $logService->log($operation, 'info', "View link: {$status->webViewLink}");
         }
 
-        return $file->webViewLink ?? $file->id;
+        return $status->webViewLink ?? $status->id;
     }
     
     private function formatBytes(int $bytes): string

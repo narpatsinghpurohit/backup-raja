@@ -26,6 +26,16 @@ class BackupLogController extends Controller
         ]);
     }
 
+    public function status(BackupOperation $backup)
+    {
+        return response()->json([
+            'status' => $backup->status,
+            'error_message' => $backup->error_message,
+            'completed_at' => $backup->completed_at,
+            'archive_size' => $backup->archive_size,
+        ]);
+    }
+
     public function restoreLogs(Request $request, RestoreOperation $restore)
     {
         $sinceId = $request->query('since_id');

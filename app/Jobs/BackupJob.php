@@ -14,6 +14,17 @@ class BackupJob implements ShouldQueue
 {
     use Queueable, InteractsWithQueue, SerializesModels;
 
+    /**
+     * The number of seconds the job can run before timing out.
+     * Set to 1 hour for large database backups.
+     */
+    public $timeout = 3600;
+
+    /**
+     * The number of times the job may be attempted.
+     */
+    public $tries = 2;
+
     public function __construct(
         public BackupOperation $operation
     ) {}
@@ -115,11 +126,32 @@ class BackupJob implements ShouldQueue
 
     public function failed(\Throwable $exception): void
     {
-        $this->operation->update([
-            'status' => 'failed',
-            'completed_at' => now(),
-            'error_message' => $exception->getMessage(),
-        ]);
+        // Refresh the operation to get latest state
+        $this->operation->refresh();
+        
+        // Only update if not already in a final state
+        if (!in_array($this->operation->status, ['completed', 'failed', 'cancelled'])) {
+            $this->operation->update([
+                'status' => 'failed',
+                'completed_at' => now(),
+                'error_message' => $exception->getMessage(),
+            ]);
+            
+            // Log the failure
+            try {
+                $logService = app(LogService::class);
+                $logService->log($this->operation, 'error', '═══════════════════════════════════════════════════');
+                $logService->log($this->operation, 'error', 'Job failed: ' . $exception->getMessage());
+                $logService->log($this->operation, 'error', 'Exception type: ' . get_class($exception));
+                
+                if ($exception instanceof \Symfony\Component\Process\Exception\ProcessTimedOutException) {
+                    $logService->log($this->operation, 'error', 'The backup process exceeded the timeout limit.');
+                    $logService->log($this->operation, 'error', 'Consider increasing the timeout for large backups.');
+                }
+            } catch (\Exception $e) {
+                // Silently fail if logging fails
+            }
+        }
     }
 }
 
