@@ -4,10 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Copy } from 'lucide-react';
 import { useState } from 'react';
 import { FolderPickerButton } from '@/components/connections/FolderPickerButton';
+import { LocalStorageFolderPickerButton } from '@/components/connections/LocalStorageFolderPickerButton';
 import type { GoogleDriveFolder } from '@/types/google-drive';
+import type { LocalStorageFolder } from '@/types/local-storage';
 
 interface Connection {
   id: number;
@@ -57,6 +60,8 @@ export default function Edit({ connection }: Props) {
   const [updateCredentials, setUpdateCredentials] = useState(false);
   const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
   const [folderChanged, setFolderChanged] = useState(false);
+  const [selectedLocalPath, setSelectedLocalPath] = useState<string | null>(null);
+  const [pathChanged, setPathChanged] = useState(false);
 
   const handleFolderSelect = (folder: GoogleDriveFolder | null) => {
     if (folder) {
@@ -65,6 +70,17 @@ export default function Edit({ connection }: Props) {
     } else {
       handleCredentialChange('folder_id', '');
       setSelectedFolderPath(null);
+    }
+  };
+
+  const handleLocalFolderSelect = (folder: LocalStorageFolder | null) => {
+    if (folder) {
+      const path = folder.path.startsWith('/') ? folder.path.slice(1) : folder.path;
+      handleCredentialChange('path', path);
+      setSelectedLocalPath(folder.path);
+    } else {
+      handleCredentialChange('path', '');
+      setSelectedLocalPath(null);
     }
   };
 
@@ -84,6 +100,14 @@ export default function Edit({ connection }: Props) {
         // Empty tokens signal folder-only update to backend
         access_token: '',
         refresh_token: '',
+      };
+      payload.type = connection.type;
+    }
+    // Handle Local Storage path-only updates
+    else if (connection.type === 'local_storage' && pathChanged && !updateCredentials) {
+      payload.credentials = {
+        disk: formData.credentials.disk,
+        path: formData.credentials.path,
       };
       payload.type = connection.type;
     }
@@ -220,6 +244,70 @@ export default function Edit({ connection }: Props) {
                         Current folder ID: {formData.credentials.folder_id}
                       </p>
                     )}
+                  </div>
+                )}
+
+                {/* Local Storage path selection - always visible for Local Storage connections */}
+                {connection.type === 'local_storage' && (
+                  <div className="rounded-lg border bg-muted/30 p-4">
+                    <Label htmlFor="storage_disk" className="text-base font-medium">Storage Location</Label>
+                    <p className="mb-3 text-sm text-muted-foreground">
+                      Select where backups will be stored on the server
+                    </p>
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="storage_disk" className="text-sm">Storage Disk</Label>
+                        <Select
+                          value={formData.credentials.disk}
+                          onValueChange={(value) => {
+                            handleCredentialChange('disk', value);
+                            setPathChanged(true);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="local">Local (storage/app)</SelectItem>
+                            <SelectItem value="public">Public (storage/app/public)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="storage_path" className="text-sm">Storage Path</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="storage_path"
+                            value={formData.credentials.path}
+                            onChange={(e) => {
+                              handleCredentialChange('path', e.target.value);
+                              setSelectedLocalPath(null);
+                              setPathChanged(true);
+                            }}
+                            placeholder="backups"
+                            className="flex-1"
+                          />
+                          <LocalStorageFolderPickerButton
+                            disk={formData.credentials.disk}
+                            onFolderSelect={(folder) => {
+                              handleLocalFolderSelect(folder);
+                              setPathChanged(true);
+                            }}
+                            currentPath={formData.credentials.path}
+                          />
+                        </div>
+                        {selectedLocalPath && (
+                          <p className="mt-1 text-sm text-green-600">
+                            ✓ Selected: {selectedLocalPath}
+                          </p>
+                        )}
+                        {!selectedLocalPath && formData.credentials.path && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Current path: {formData.credentials.path}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
 

@@ -8,8 +8,10 @@ import { TechnologyConfig, getPathFieldsForType } from '@/config/connection-type
 import { TechnologyIcon } from './TechnologyIcon';
 import { HighlightedField } from './HighlightedField';
 import { FolderPickerButton } from './FolderPickerButton';
+import { LocalStorageFolderPickerButton } from './LocalStorageFolderPickerButton';
 import { ArrowLeft } from 'lucide-react';
 import type { GoogleDriveFolder } from '@/types/google-drive';
+import type { LocalStorageFolder } from '@/types/local-storage';
 
 interface CredentialFormProps {
   technology: TechnologyConfig;
@@ -44,6 +46,7 @@ export function CredentialForm({
   const pathFields = isDuplicateMode ? getPathFieldsForType(technology.type) : [];
   const highlightedFieldNames = pathFields.map((f) => f.field);
   const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
+  const [selectedLocalPath, setSelectedLocalPath] = useState<string | null>(null);
 
   const handleFolderSelect = (folder: GoogleDriveFolder | null) => {
     if (folder) {
@@ -52,6 +55,18 @@ export function CredentialForm({
     } else {
       onCredentialChange('folder_id', '');
       setSelectedFolderPath(null);
+    }
+  };
+
+  const handleLocalFolderSelect = (folder: LocalStorageFolder | null) => {
+    if (folder) {
+      // Remove leading slash for storage path
+      const path = folder.path.startsWith('/') ? folder.path.slice(1) : folder.path;
+      onCredentialChange('path', path);
+      setSelectedLocalPath(folder.path);
+    } else {
+      onCredentialChange('path', '');
+      setSelectedLocalPath(null);
     }
   };
 
@@ -93,7 +108,9 @@ export function CredentialForm({
               isDuplicateMode,
               connectionId,
               handleFolderSelect,
-              selectedFolderPath
+              selectedFolderPath,
+              handleLocalFolderSelect,
+              selectedLocalPath
             )}
 
             {errors.error && <p className="text-sm text-red-500">{errors.error}</p>}
@@ -125,7 +142,9 @@ function renderCredentialFields(
   isDuplicateMode: boolean = false,
   connectionId?: number,
   onFolderSelect?: (folder: GoogleDriveFolder | null) => void,
-  selectedFolderPath?: string | null
+  selectedFolderPath?: string | null,
+  onLocalFolderSelect?: (folder: LocalStorageFolder | null) => void,
+  selectedLocalPath?: string | null
 ) {
   const shouldHighlight = (fieldName: string) => highlightedFieldNames.includes(fieldName);
   const getHelpText = (fieldName: string) =>
@@ -316,14 +335,32 @@ function renderCredentialFields(
           'path',
           <div>
             <Label htmlFor="path">Storage Path</Label>
-            <Input
-              id="path"
-              value={credentials.path || ''}
-              onChange={(e) => onChange('path', e.target.value)}
-              placeholder="backups"
-              required
-            />
-            {!highlightedFieldNames.includes('path') && (
+            <div className="flex gap-2">
+              <Input
+                id="path"
+                value={credentials.path || ''}
+                onChange={(e) => {
+                  onChange('path', e.target.value);
+                  if (onLocalFolderSelect) onLocalFolderSelect(null);
+                }}
+                placeholder="backups"
+                className="flex-1"
+                required
+              />
+              {onLocalFolderSelect && (
+                <LocalStorageFolderPickerButton
+                  disk={credentials.disk || 'local'}
+                  onFolderSelect={onLocalFolderSelect}
+                  currentPath={credentials.path}
+                />
+              )}
+            </div>
+            {selectedLocalPath && (
+              <p className="mt-1 text-sm text-green-600">
+                ✓ Selected: {selectedLocalPath}
+              </p>
+            )}
+            {!selectedLocalPath && !highlightedFieldNames.includes('path') && (
               <p className="mt-1 text-xs text-muted-foreground">
                 Path relative to the storage disk (e.g., "backups" or "backups/mongodb")
               </p>

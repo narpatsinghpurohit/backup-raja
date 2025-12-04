@@ -43,6 +43,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/{id}', [\App\Http\Controllers\GoogleDriveFolderController::class, 'show'])->name('google-drive.folders.show');
     });
 
+    // Local Storage Folder API Routes
+    Route::prefix('api/local-storage/folders')->group(function () {
+        Route::get('/', [\App\Http\Controllers\LocalStorageFolderController::class, 'index'])->name('local-storage.folders.index');
+        Route::post('/', [\App\Http\Controllers\LocalStorageFolderController::class, 'store'])->name('local-storage.folders.store');
+    });
+
     // Connection Management Routes
     Route::get('connections/create/google-drive', [\App\Http\Controllers\ConnectionController::class, 'createGoogleDrive'])->name('connections.create.google-drive');
     Route::get('connections/{connection}/duplicate', [\App\Http\Controllers\ConnectionController::class, 'duplicate'])->name('connections.duplicate');
