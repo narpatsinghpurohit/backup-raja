@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle2, HardDrive } from 'lucide-react';
 import { useState } from 'react';
+import { FolderPickerButton } from '@/components/connections/FolderPickerButton';
+import type { GoogleDriveFolder } from '@/types/google-drive';
 
 interface Props {
   suggestedName: string;
@@ -25,6 +27,17 @@ export default function CreateGoogleDrive({ suggestedName, email }: Props) {
     name: suggestedName,
     folder_id: '',
   });
+  const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
+
+  const handleFolderSelect = (folder: GoogleDriveFolder | null) => {
+    if (folder) {
+      setFormData((prev) => ({ ...prev, folder_id: folder.id }));
+      setSelectedFolderPath(folder.path || `/${folder.name}`);
+    } else {
+      setFormData((prev) => ({ ...prev, folder_id: '' }));
+      setSelectedFolderPath(null);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,17 +111,33 @@ export default function CreateGoogleDrive({ suggestedName, email }: Props) {
                 </div>
 
                 <div>
-                  <Label htmlFor="folder_id">Folder ID (Optional)</Label>
-                  <Input
-                    id="folder_id"
-                    value={formData.folder_id}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, folder_id: e.target.value }))}
-                    placeholder="Leave empty to use root folder"
-                  />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    💡 To get a folder ID, open the folder in Google Drive and copy the ID from the
-                    URL: drive.google.com/drive/folders/<strong>FOLDER_ID</strong>
-                  </p>
+                  <Label htmlFor="folder_id">Backup Folder (Optional)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="folder_id"
+                      value={formData.folder_id}
+                      onChange={(e) => {
+                        setFormData((prev) => ({ ...prev, folder_id: e.target.value }));
+                        setSelectedFolderPath(null);
+                      }}
+                      placeholder="Leave empty to use root folder"
+                      className="flex-1"
+                    />
+                    <FolderPickerButton
+                      onFolderSelect={handleFolderSelect}
+                      currentFolderId={formData.folder_id}
+                    />
+                  </div>
+                  {selectedFolderPath && (
+                    <p className="mt-1 text-sm text-green-600">
+                      ✓ Selected: {selectedFolderPath}
+                    </p>
+                  )}
+                  {!selectedFolderPath && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Click "Browse" to select a folder, or paste a folder ID manually
+                    </p>
+                  )}
                   {errors['credentials.folder_id'] && (
                     <p className="mt-1 text-sm text-red-500">{errors['credentials.folder_id']}</p>
                   )}

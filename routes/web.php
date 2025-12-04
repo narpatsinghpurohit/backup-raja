@@ -35,6 +35,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('oauth/google/redirect', [\App\Http\Controllers\GoogleOAuthController::class, 'redirect'])->name('oauth.google.redirect');
     Route::get('oauth/google/callback', [\App\Http\Controllers\GoogleOAuthController::class, 'callback'])->name('oauth.google.callback');
 
+    // Google Drive Folder API Routes
+    Route::prefix('api/google-drive/folders')->group(function () {
+        Route::get('/', [\App\Http\Controllers\GoogleDriveFolderController::class, 'index'])->name('google-drive.folders.index');
+        Route::post('/', [\App\Http\Controllers\GoogleDriveFolderController::class, 'store'])->name('google-drive.folders.store');
+        Route::get('/search', [\App\Http\Controllers\GoogleDriveFolderController::class, 'search'])->name('google-drive.folders.search');
+        Route::get('/{id}', [\App\Http\Controllers\GoogleDriveFolderController::class, 'show'])->name('google-drive.folders.show');
+    });
+
     // Connection Management Routes
     Route::get('connections/create/google-drive', [\App\Http\Controllers\ConnectionController::class, 'createGoogleDrive'])->name('connections.create.google-drive');
     Route::get('connections/{connection}/duplicate', [\App\Http\Controllers\ConnectionController::class, 'duplicate'])->name('connections.duplicate');

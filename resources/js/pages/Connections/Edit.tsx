@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Copy } from 'lucide-react';
 import { useState } from 'react';
+import { FolderPickerButton } from '@/components/connections/FolderPickerButton';
+import type { GoogleDriveFolder } from '@/types/google-drive';
 
 interface Connection {
   id: number;
@@ -53,6 +55,17 @@ export default function Edit({ connection }: Props) {
     },
   });
   const [updateCredentials, setUpdateCredentials] = useState(false);
+  const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
+
+  const handleFolderSelect = (folder: GoogleDriveFolder | null) => {
+    if (folder) {
+      handleCredentialChange('folder_id', folder.id);
+      setSelectedFolderPath(folder.path || `/${folder.name}`);
+    } else {
+      handleCredentialChange('folder_id', '');
+      setSelectedFolderPath(null);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -264,12 +277,33 @@ export default function Edit({ connection }: Props) {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="folder_id">Folder ID (Optional)</Label>
-                          <Input
-                            id="folder_id"
-                            value={formData.credentials.folder_id}
-                            onChange={(e) => handleCredentialChange('folder_id', e.target.value)}
-                          />
+                          <Label htmlFor="folder_id">Backup Folder (Optional)</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              id="folder_id"
+                              value={formData.credentials.folder_id}
+                              onChange={(e) => {
+                                handleCredentialChange('folder_id', e.target.value);
+                                setSelectedFolderPath(null);
+                              }}
+                              placeholder="Leave empty to use root folder"
+                              className="flex-1"
+                            />
+                            <FolderPickerButton
+                              onFolderSelect={handleFolderSelect}
+                              currentFolderId={formData.credentials.folder_id}
+                            />
+                          </div>
+                          {selectedFolderPath && (
+                            <p className="mt-1 text-sm text-green-600">
+                              ✓ Selected: {selectedFolderPath}
+                            </p>
+                          )}
+                          {!selectedFolderPath && formData.credentials.folder_id && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Current folder ID: {formData.credentials.folder_id}
+                            </p>
+                          )}
                         </div>
                       </>
                     )}

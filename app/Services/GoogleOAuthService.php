@@ -16,7 +16,9 @@ class GoogleOAuthService
         $this->client->setClientId(config('services.google.client_id'));
         $this->client->setClientSecret(config('services.google.client_secret'));
         $this->client->setRedirectUri(config('services.google.redirect_uri'));
-        $this->client->addScope(Drive::DRIVE_FILE);
+        // DRIVE scope allows full access to browse and manage files/folders
+        // DRIVE_FILE only allows access to files created by the app
+        $this->client->addScope(Drive::DRIVE);
         $this->client->addScope('email');
         $this->client->setAccessType('offline');
         $this->client->setPrompt('consent');
