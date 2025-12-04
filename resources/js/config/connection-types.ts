@@ -27,14 +27,6 @@ export const CONNECTION_TECHNOLOGIES: TechnologyConfig[] = [
     icon: 'Cloud',
     color: 'bg-orange-500',
   },
-  {
-    type: 'google_drive',
-    name: 'Google Drive',
-    description: 'Google Drive folder',
-    category: 'source',
-    icon: 'HardDrive',
-    color: 'bg-blue-500',
-  },
   // Destinations
   {
     type: 's3_destination',
@@ -43,6 +35,14 @@ export const CONNECTION_TECHNOLOGIES: TechnologyConfig[] = [
     category: 'destination',
     icon: 'Cloud',
     color: 'bg-orange-500',
+  },
+  {
+    type: 'google_drive',
+    name: 'Google Drive',
+    description: 'Google Drive folder for backups',
+    category: 'destination',
+    icon: 'HardDrive',
+    color: 'bg-blue-500',
   },
   {
     type: 'local_storage',
