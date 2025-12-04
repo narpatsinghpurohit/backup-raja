@@ -138,17 +138,30 @@ class GoogleDriveFolderController extends Controller
     }
 
     /**
-     * Get OAuth credentials from session
+     * Get OAuth credentials from session or connection
      */
     private function getCredentials(): ?array
     {
+        // First try session tokens (for new connections during OAuth flow)
         $tokens = session('google_oauth_tokens');
         
-        if (!$tokens || !isset($tokens['access_token'])) {
-            return null;
+        if ($tokens && isset($tokens['access_token'])) {
+            return $tokens;
         }
 
-        return $tokens;
+        // If no session tokens, try to get from connection_id parameter
+        $connectionId = request()->query('connection_id');
+        if ($connectionId) {
+            $connection = \App\Models\Connection::where('id', $connectionId)
+                ->where('type', 'google_drive')
+                ->first();
+            
+            if ($connection && isset($connection->credentials['access_token'])) {
+                return $connection->credentials;
+            }
+        }
+
+        return null;
     }
 
     /**

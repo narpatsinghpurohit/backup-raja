@@ -56,6 +56,7 @@ export default function Edit({ connection }: Props) {
   });
   const [updateCredentials, setUpdateCredentials] = useState(false);
   const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
+  const [folderChanged, setFolderChanged] = useState(false);
 
   const handleFolderSelect = (folder: GoogleDriveFolder | null) => {
     if (folder) {
@@ -76,8 +77,18 @@ export default function Edit({ connection }: Props) {
       name: formData.name,
     };
 
+    // Handle Google Drive folder-only updates
+    if (connection.type === 'google_drive' && folderChanged && !updateCredentials) {
+      payload.credentials = {
+        folder_id: formData.credentials.folder_id,
+        // Empty tokens signal folder-only update to backend
+        access_token: '',
+        refresh_token: '',
+      };
+      payload.type = connection.type;
+    }
     // Only include credentials if user wants to update them
-    if (updateCredentials) {
+    else if (updateCredentials) {
       let filteredCredentials: Record<string, string> = {};
       if (connection.type === 's3' || connection.type === 's3_destination') {
         filteredCredentials = {
@@ -171,6 +182,47 @@ export default function Edit({ connection }: Props) {
                   {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                 </div>
 
+                {/* Google Drive folder selection - always visible for Google Drive connections */}
+                {connection.type === 'google_drive' && (
+                  <div className="rounded-lg border bg-muted/30 p-4">
+                    <Label htmlFor="folder_id" className="text-base font-medium">Backup Folder</Label>
+                    <p className="mb-3 text-sm text-muted-foreground">
+                      Select where backups will be stored in your Google Drive
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        id="folder_id"
+                        value={formData.credentials.folder_id}
+                        onChange={(e) => {
+                          handleCredentialChange('folder_id', e.target.value);
+                          setSelectedFolderPath(null);
+                          setFolderChanged(true);
+                        }}
+                        placeholder="Leave empty to use root folder"
+                        className="flex-1"
+                      />
+                      <FolderPickerButton
+                        onFolderSelect={(folder) => {
+                          handleFolderSelect(folder);
+                          setFolderChanged(true);
+                        }}
+                        currentFolderId={formData.credentials.folder_id}
+                        connectionId={connection.id}
+                      />
+                    </div>
+                    {selectedFolderPath && (
+                      <p className="mt-1 text-sm text-green-600">
+                        ✓ Selected: {selectedFolderPath}
+                      </p>
+                    )}
+                    {!selectedFolderPath && formData.credentials.folder_id && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Current folder ID: {formData.credentials.folder_id}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -179,7 +231,9 @@ export default function Edit({ connection }: Props) {
                     onChange={(e) => setUpdateCredentials(e.target.checked)}
                     className="h-4 w-4"
                   />
-                  <Label htmlFor="updateCredentials">Update credentials</Label>
+                  <Label htmlFor="updateCredentials">
+                    {connection.type === 'google_drive' ? 'Update OAuth tokens' : 'Update credentials'}
+                  </Label>
                 </div>
 
                 {updateCredentials && (
@@ -275,35 +329,6 @@ export default function Edit({ connection }: Props) {
                             value={formData.credentials.refresh_token}
                             onChange={(e) => handleCredentialChange('refresh_token', e.target.value)}
                           />
-                        </div>
-                        <div>
-                          <Label htmlFor="folder_id">Backup Folder (Optional)</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              id="folder_id"
-                              value={formData.credentials.folder_id}
-                              onChange={(e) => {
-                                handleCredentialChange('folder_id', e.target.value);
-                                setSelectedFolderPath(null);
-                              }}
-                              placeholder="Leave empty to use root folder"
-                              className="flex-1"
-                            />
-                            <FolderPickerButton
-                              onFolderSelect={handleFolderSelect}
-                              currentFolderId={formData.credentials.folder_id}
-                            />
-                          </div>
-                          {selectedFolderPath && (
-                            <p className="mt-1 text-sm text-green-600">
-                              ✓ Selected: {selectedFolderPath}
-                            </p>
-                          )}
-                          {!selectedFolderPath && formData.credentials.folder_id && (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              Current folder ID: {formData.credentials.folder_id}
-                            </p>
-                          )}
                         </div>
                       </>
                     )}

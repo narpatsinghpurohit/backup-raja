@@ -32,17 +32,42 @@ class ConnectionService
 
     public function updateConnection(Connection $connection, array $data): Connection
     {
-        // Re-validate credentials if they changed
-        if (isset($data['credentials'])) {
-            $this->testCredentials($data['type'] ?? $connection->type, $data['credentials']);
+        $type = $data['type'] ?? $connection->type;
+        $newCredentials = $data['credentials'] ?? null;
+        $shouldValidate = false;
+
+        // Handle Google Drive partial updates (folder_id only)
+        if ($type === 'google_drive' && $newCredentials) {
+            $existingCredentials = $connection->credentials;
+            
+            // If tokens are empty, merge with existing credentials (folder-only update)
+            if (empty($newCredentials['access_token']) && empty($newCredentials['refresh_token'])) {
+                $newCredentials = array_merge($existingCredentials, [
+                    'folder_id' => $newCredentials['folder_id'] ?? $existingCredentials['folder_id'] ?? '',
+                ]);
+                // Don't validate for folder-only updates
+                $shouldValidate = false;
+            } else {
+                // Full credential update - validate
+                $shouldValidate = true;
+            }
+            
+            $data['credentials'] = $newCredentials;
+        } elseif (isset($data['credentials'])) {
+            $shouldValidate = true;
         }
 
-        return DB::transaction(function () use ($connection, $data) {
+        // Re-validate credentials if they changed (except for folder-only updates)
+        if ($shouldValidate && isset($data['credentials'])) {
+            $this->testCredentials($type, $data['credentials']);
+        }
+
+        return DB::transaction(function () use ($connection, $data, $shouldValidate) {
             $connection->update([
                 'name' => $data['name'] ?? $connection->name,
                 'type' => $data['type'] ?? $connection->type,
                 'credentials' => $data['credentials'] ?? $connection->credentials,
-                'last_validated_at' => isset($data['credentials']) ? now() : $connection->last_validated_at,
+                'last_validated_at' => $shouldValidate ? now() : $connection->last_validated_at,
             ]);
 
             return $connection->fresh();

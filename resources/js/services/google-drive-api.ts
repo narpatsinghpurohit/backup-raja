@@ -7,6 +7,33 @@ import type {
 
 const API_BASE = '/api/google-drive/folders';
 
+// Store connection ID for API calls when editing existing connections
+let currentConnectionId: number | null = null;
+
+export function setConnectionId(connectionId: number | null): void {
+  currentConnectionId = connectionId;
+}
+
+export function getConnectionId(): number | null {
+  return currentConnectionId;
+}
+
+function buildUrl(path: string, params: Record<string, string> = {}): string {
+  const url = new URL(path, window.location.origin);
+  
+  // Add connection_id if set (for editing existing connections)
+  if (currentConnectionId) {
+    url.searchParams.set('connection_id', currentConnectionId.toString());
+  }
+  
+  // Add other params
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) url.searchParams.set(key, value);
+  });
+  
+  return url.toString();
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error: FolderErrorResponse = await response.json();
@@ -19,7 +46,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export async function listFolders(parentId?: string): Promise<GoogleDriveFolder[]> {
-  const url = parentId ? `${API_BASE}?parent_id=${encodeURIComponent(parentId)}` : API_BASE;
+  const url = buildUrl(API_BASE, parentId ? { parent_id: parentId } : {});
   
   const response = await fetch(url, {
     headers: {
@@ -35,8 +62,9 @@ export async function listFolders(parentId?: string): Promise<GoogleDriveFolder[
 
 export async function createFolder(name: string, parentId?: string): Promise<GoogleDriveFolder> {
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  const url = buildUrl(API_BASE);
   
-  const response = await fetch(API_BASE, {
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -56,7 +84,9 @@ export async function createFolder(name: string, parentId?: string): Promise<Goo
 }
 
 export async function getFolderDetails(folderId: string): Promise<GoogleDriveFolder> {
-  const response = await fetch(`${API_BASE}/${encodeURIComponent(folderId)}`, {
+  const url = buildUrl(`${API_BASE}/${encodeURIComponent(folderId)}`);
+  
+  const response = await fetch(url, {
     headers: {
       Accept: 'application/json',
       'X-Requested-With': 'XMLHttpRequest',
@@ -69,7 +99,9 @@ export async function getFolderDetails(folderId: string): Promise<GoogleDriveFol
 }
 
 export async function searchFolders(query: string): Promise<GoogleDriveFolder[]> {
-  const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`, {
+  const url = buildUrl(`${API_BASE}/search`, { q: query });
+  
+  const response = await fetch(url, {
     headers: {
       Accept: 'application/json',
       'X-Requested-With': 'XMLHttpRequest',
