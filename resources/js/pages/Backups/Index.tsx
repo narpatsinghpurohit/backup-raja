@@ -4,15 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus } from 'lucide-react';
+import { getTypeLabel } from '@/config/connection-types';
 
 interface BackupOperation {
   id: number;
   status: string;
-  source_connection: { name: string };
-  destination_connection: { name: string };
+  source_connection: { name: string; type: string };
+  destination_connection: { name: string; type: string };
   created_at: string;
   archive_size: number | null;
 }
+
 
 interface Stats {
   total: number;
@@ -111,7 +113,7 @@ export default function Index({ backups, stats }: Props) {
                           {backup.source_connection.name} → {backup.destination_connection.name}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {new Date(backup.created_at).toLocaleString()}
+                          {getTypeLabel(backup.source_connection.type)} → {getTypeLabel(backup.destination_connection.type)} • {new Date(backup.created_at).toLocaleString()}
                         </div>
                       </div>
                       <div className="flex items-center gap-4">

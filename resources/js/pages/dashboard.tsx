@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Database, HardDrive, Activity, Plus } from 'lucide-react';
+import { getTypeLabel } from '@/config/connection-types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -17,10 +18,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface BackupOperation {
   id: number;
   status: string;
-  source_connection: { name: string };
-  destination_connection: { name: string };
+  source_connection: { name: string; type: string };
+  destination_connection: { name: string; type: string };
   created_at: string;
 }
+
 
 interface Stats {
   total_backups: number;
@@ -131,7 +133,7 @@ export default function Dashboard({ connections, recentBackups, stats }: Props) 
                                                     {backup.source_connection.name} → {backup.destination_connection.name}
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">
-                                                    {new Date(backup.created_at).toLocaleString()}
+                                                    {getTypeLabel(backup.source_connection.type)} → {getTypeLabel(backup.destination_connection.type)} • {new Date(backup.created_at).toLocaleString()}
                                                 </div>
                                             </div>
                                             <Badge variant={getStatusColor(backup.status) as any} className="text-xs">

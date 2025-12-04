@@ -56,6 +56,18 @@ export const CONNECTION_TECHNOLOGIES: TechnologyConfig[] = [
   },
 ];
 
+
+export const getTypeLabel = (type: string): string => {
+  const labels: Record<string, string> = {
+    mongodb: 'MongoDB',
+    s3: 'S3',
+    google_drive: 'Google Drive',
+    s3_destination: 'S3',
+    local_storage: 'Server Storage',
+  };
+  return labels[type] || type;
+};
+
 export const getTechnologyByType = (type: string): TechnologyConfig | undefined =>
   CONNECTION_TECHNOLOGIES.find((t) => t.type === type);
 
