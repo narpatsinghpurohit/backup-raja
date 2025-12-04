@@ -31,7 +31,13 @@ class StoreConnectionRequest extends FormRequest
             $rules['credentials.uri'] = ['required', 'string'];
             $rules['credentials.database'] = ['required', 'string'];
         } elseif ($type === 'google_drive') {
-            $rules['credentials.access_token'] = ['required', 'string'];
+            // If OAuth tokens are in session, access_token is not required in the request
+            // The controller will add them after validation
+            if (session()->has('google_oauth_tokens')) {
+                $rules['credentials.access_token'] = ['nullable', 'string'];
+            } else {
+                $rules['credentials.access_token'] = ['required', 'string'];
+            }
             $rules['credentials.refresh_token'] = ['nullable', 'string'];
             $rules['credentials.folder_id'] = ['nullable', 'string'];
         } elseif ($type === 'local_storage') {

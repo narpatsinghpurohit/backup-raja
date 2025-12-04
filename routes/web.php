@@ -31,7 +31,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     })->name('dashboard');
 
+    // Google OAuth Routes
+    Route::get('oauth/google/redirect', [\App\Http\Controllers\GoogleOAuthController::class, 'redirect'])->name('oauth.google.redirect');
+    Route::get('oauth/google/callback', [\App\Http\Controllers\GoogleOAuthController::class, 'callback'])->name('oauth.google.callback');
+
     // Connection Management Routes
+    Route::get('connections/create/google-drive', [\App\Http\Controllers\ConnectionController::class, 'createGoogleDrive'])->name('connections.create.google-drive');
     Route::get('connections/{connection}/duplicate', [\App\Http\Controllers\ConnectionController::class, 'duplicate'])->name('connections.duplicate');
     Route::resource('connections', \App\Http\Controllers\ConnectionController::class);
 

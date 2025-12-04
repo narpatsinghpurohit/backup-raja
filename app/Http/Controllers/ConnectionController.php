@@ -25,13 +25,50 @@ class ConnectionController extends Controller
 
     public function create()
     {
-        return Inertia::render('Connections/Create');
+        return Inertia::render('Connections/Create', [
+            'googleOAuthConfigured' => !empty(config('services.google.client_id')),
+        ]);
+    }
+
+    public function createGoogleDrive()
+    {
+        // Check if OAuth tokens are in session
+        if (!session()->has('google_oauth_tokens')) {
+            return redirect()->route('connections.create')
+                ->withErrors(['error' => 'No OAuth tokens found. Please connect to Google Drive again.']);
+        }
+
+        $tokens = session('google_oauth_tokens');
+        $email = session('google_oauth_email', 'Unknown');
+
+        return Inertia::render('Connections/CreateGoogleDrive', [
+            'suggestedName' => "Google Drive - {$email}",
+            'email' => $email,
+        ]);
     }
 
     public function store(StoreConnectionRequest $request)
     {
         try {
-            $connection = $this->connectionService->createConnection($request->validated());
+            $data = $request->validated();
+
+            // Check if this is a Google Drive connection with OAuth tokens in session
+            if ($data['type'] === 'google_drive') {
+                if (!session()->has('google_oauth_tokens')) {
+                    return back()->withErrors(['error' => 'OAuth session expired. Please connect to Google Drive again.']);
+                }
+
+                $tokens = session('google_oauth_tokens');
+                $data['credentials'] = array_merge($data['credentials'] ?? [], [
+                    'access_token' => $tokens['access_token'],
+                    'refresh_token' => $tokens['refresh_token'] ?? '',
+                ]);
+
+                // Clear OAuth session data after successful use
+                session()->forget(['google_oauth_tokens', 'google_oauth_email', 'google_oauth_state']);
+            }
+
+            $connection = $this->connectionService->createConnection($data);
 
             return redirect()->route('connections.index')
                 ->with('success', 'Connection created successfully');

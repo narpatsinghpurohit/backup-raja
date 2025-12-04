@@ -85,10 +85,13 @@ class MongoBackupAdapter implements BackupAdapterInterface
         }
 
         $archiveSize = filesize($archivePath);
-        $compressionRatio = round(($dumpSize - $archiveSize) / $dumpSize * 100, 1);
         $logService->log($operation, 'info', "Archive created successfully");
         $logService->log($operation, 'info', "Compressed size: " . $this->formatBytes($archiveSize));
-        $logService->log($operation, 'info', "Compression ratio: {$compressionRatio}%");
+        
+        if ($dumpSize > 0) {
+            $compressionRatio = round(($dumpSize - $archiveSize) / $dumpSize * 100, 1);
+            $logService->log($operation, 'info', "Compression ratio: {$compressionRatio}%");
+        }
 
         // Clean up temp directory
         $this->deleteDirectory($outputPath);

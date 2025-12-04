@@ -1,12 +1,13 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { useState } from 'react';
 import { ConnectionCategory, TechnologyConfig } from '@/config/connection-types';
 import { CategoryStep } from '@/components/connections/CategoryStep';
 import { TechnologyGrid } from '@/components/connections/TechnologyGrid';
 import { CredentialForm } from '@/components/connections/CredentialForm';
+import { GoogleDriveOAuthButton } from '@/components/connections/GoogleDriveOAuthButton';
 
-type Step = 'category' | 'technology' | 'form';
+type Step = 'category' | 'technology' | 'form' | 'google-oauth';
 
 interface FormErrors {
   name?: string;
@@ -24,8 +25,13 @@ interface FormErrors {
   error?: string;
 }
 
-export default function Create() {
+interface Props {
+  googleOAuthConfigured?: boolean;
+}
+
+export default function Create({ googleOAuthConfigured = false }: Props) {
   const [step, setStep] = useState<Step>('category');
+  const [useManualGoogleDrive, setUseManualGoogleDrive] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ConnectionCategory | null>(null);
   const [selectedTechnology, setSelectedTechnology] = useState<TechnologyConfig | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -54,7 +60,12 @@ export default function Create() {
 
   const handleTechnologySelect = (technology: TechnologyConfig) => {
     setSelectedTechnology(technology);
-    setStep('form');
+    // For Google Drive, show OAuth button unless user chose manual setup
+    if (technology.type === 'google_drive' && !useManualGoogleDrive) {
+      setStep('google-oauth');
+    } else {
+      setStep('form');
+    }
   };
 
   const handleBackToCategory = () => {
@@ -154,11 +165,29 @@ export default function Create() {
             />
           )}
 
+          {step === 'google-oauth' && selectedTechnology && (
+            <div className="space-y-6">
+              <button
+                onClick={handleBackToTechnology}
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                ← Back to technologies
+              </button>
+              <GoogleDriveOAuthButton
+                isConfigured={googleOAuthConfigured}
+                onManualSetup={() => {
+                  setUseManualGoogleDrive(true);
+                  setStep('form');
+                }}
+              />
+            </div>
+          )}
+
           {step === 'form' && selectedTechnology && (
             <CredentialForm
               technology={selectedTechnology}
               formData={formData}
-              errors={errors}
+              errors={errors as Record<string, string>}
               processing={processing}
               onBack={handleBackToTechnology}
               onNameChange={handleNameChange}
