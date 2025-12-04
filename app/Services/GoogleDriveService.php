@@ -74,7 +74,18 @@ class GoogleDriveService
                 'fields' => 'id, name, parents, mimeType, createdTime, modifiedTime',
             ]);
 
-            return $this->formatFolder($folder, $driveService);
+            // For newly created folders, we know they have no children
+            // So we return directly without calling checkHasChildren
+            $parents = $folder->getParents();
+            return [
+                'id' => $folder->getId(),
+                'name' => $folder->getName(),
+                'parentId' => $parents ? $parents[0] : null,
+                'hasChildren' => false, // New folder has no children
+                'mimeType' => $folder->getMimeType(),
+                'createdTime' => $folder->getCreatedTime(),
+                'modifiedTime' => $folder->getModifiedTime(),
+            ];
         } catch (\Exception $e) {
             throw new \Exception('Failed to create folder: ' . $e->getMessage());
         }

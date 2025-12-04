@@ -36,11 +36,21 @@ function buildUrl(path: string, params: Record<string, string> = {}): string {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
-    const error: FolderErrorResponse = await response.json();
-    if (error.requiresAuth) {
-      throw new Error('AUTH_REQUIRED');
+    // Handle CSRF token mismatch specifically
+    if (response.status === 419) {
+      throw new Error('Session expired. Please refresh the page and try again.');
     }
-    throw new Error(error.error || 'An error occurred');
+    
+    try {
+      const error: FolderErrorResponse = await response.json();
+      if (error.requiresAuth) {
+        throw new Error('AUTH_REQUIRED');
+      }
+      throw new Error(error.error || 'An error occurred');
+    } catch (parseError) {
+      // If we can't parse the error response, throw a generic error
+      throw new Error(`Request failed with status ${response.status}`);
+    }
   }
   return response.json();
 }
@@ -60,9 +70,42 @@ export async function listFolders(parentId?: string): Promise<GoogleDriveFolder[
   return data.folders;
 }
 
+function getCsrfToken(): string {
+  // Try meta tag first
+  const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  if (metaToken) {
+    return metaToken;
+  }
+  
+  // Try XSRF-TOKEN cookie (Laravel sets this)
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'XSRF-TOKEN') {
+      return decodeURIComponent(value);
+    }
+  }
+  
+  return '';
+}
+
 export async function createFolder(name: string, parentId?: string): Promise<GoogleDriveFolder> {
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  const csrfToken = getCsrfToken();
   const url = buildUrl(API_BASE);
+  
+  if (!csrfToken) {
+    console.warn('No CSRF token found');
+  }
+  
+  const body: Record<string, unknown> = {
+    name,
+    parent_id: parentId || null,
+  };
+  
+  // Include connection_id in body for POST requests
+  if (currentConnectionId) {
+    body.connection_id = currentConnectionId;
+  }
   
   const response = await fetch(url, {
     method: 'POST',
@@ -70,13 +113,11 @@ export async function createFolder(name: string, parentId?: string): Promise<Goo
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-Requested-With': 'XMLHttpRequest',
-      'X-CSRF-TOKEN': csrfToken || '',
+      'X-CSRF-TOKEN': csrfToken,
+      'X-XSRF-TOKEN': csrfToken,
     },
     credentials: 'same-origin',
-    body: JSON.stringify({
-      name,
-      parent_id: parentId || null,
-    }),
+    body: JSON.stringify(body),
   });
 
   const data = await handleResponse<FolderResponse>(response);

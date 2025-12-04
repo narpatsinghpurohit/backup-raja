@@ -149,8 +149,8 @@ class GoogleDriveFolderController extends Controller
             return $tokens;
         }
 
-        // If no session tokens, try to get from connection_id parameter
-        $connectionId = request()->query('connection_id');
+        // If no session tokens, try to get from connection_id parameter (query or body)
+        $connectionId = request()->query('connection_id') ?? request()->input('connection_id');
         if ($connectionId) {
             $connection = \App\Models\Connection::where('id', $connectionId)
                 ->where('type', 'google_drive')

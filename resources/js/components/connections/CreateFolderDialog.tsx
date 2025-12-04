@@ -35,6 +35,7 @@ export function CreateFolderDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent event from bubbling to parent forms
     setValidationError(null);
 
     const trimmedName = name.trim();
@@ -54,8 +55,13 @@ export function CreateFolderDialog({
       return;
     }
 
-    await onCreate(trimmedName);
-    setName('');
+    try {
+      await onCreate(trimmedName);
+      setName('');
+    } catch (err) {
+      // Error is handled by parent, but we catch here to prevent any bubbling
+      console.error('Failed to create folder:', err);
+    }
   };
 
   const handleClose = () => {
