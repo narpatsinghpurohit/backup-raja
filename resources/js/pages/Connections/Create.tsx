@@ -1,11 +1,12 @@
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
+import { ConnectionCategory, TechnologyConfig } from '@/config/connection-types';
+import { CategoryStep } from '@/components/connections/CategoryStep';
+import { TechnologyGrid } from '@/components/connections/TechnologyGrid';
+import { CredentialForm } from '@/components/connections/CredentialForm';
+
+type Step = 'category' | 'technology' | 'form';
 
 interface FormErrors {
   name?: string;
@@ -24,7 +25,9 @@ interface FormErrors {
 }
 
 export default function Create() {
-  const [selectedType, setSelectedType] = useState<string>('s3');
+  const [step, setStep] = useState<Step>('category');
+  const [selectedCategory, setSelectedCategory] = useState<ConnectionCategory | null>(null);
+  const [selectedTechnology, setSelectedTechnology] = useState<TechnologyConfig | null>(null);
   const [processing, setProcessing] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [formData, setFormData] = useState({
@@ -41,66 +44,98 @@ export default function Create() {
       folder_id: '',
       disk: 'local',
       path: 'backups',
-    },
+    } as Record<string, string>,
   });
+
+  const handleCategorySelect = (category: ConnectionCategory) => {
+    setSelectedCategory(category);
+    setStep('technology');
+  };
+
+  const handleTechnologySelect = (technology: TechnologyConfig) => {
+    setSelectedTechnology(technology);
+    setStep('form');
+  };
+
+  const handleBackToCategory = () => {
+    setStep('category');
+    setSelectedCategory(null);
+  };
+
+  const handleBackToTechnology = () => {
+    setStep('technology');
+  };
+
+
+  const handleNameChange = (name: string) => {
+    setFormData((prev) => ({ ...prev, name }));
+  };
+
+  const handleCredentialChange = (field: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      credentials: { ...prev.credentials, [field]: value },
+    }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedTechnology) return;
+
     setProcessing(true);
     setErrors({});
-    
+
     // Filter credentials based on connection type
     let filteredCredentials: Record<string, string> = {};
-    if (selectedType === 's3' || selectedType === 's3_destination') {
+    const type = selectedTechnology.type;
+
+    if (type === 's3' || type === 's3_destination') {
       filteredCredentials = {
         access_key: formData.credentials.access_key,
         secret_key: formData.credentials.secret_key,
         region: formData.credentials.region,
         bucket: formData.credentials.bucket,
       };
-    } else if (selectedType === 'mongodb') {
+    } else if (type === 'mongodb') {
       filteredCredentials = {
         uri: formData.credentials.uri,
         database: formData.credentials.database,
       };
-    } else if (selectedType === 'google_drive') {
+    } else if (type === 'google_drive') {
       filteredCredentials = {
         access_token: formData.credentials.access_token,
         refresh_token: formData.credentials.refresh_token,
         folder_id: formData.credentials.folder_id,
       };
-    } else if (selectedType === 'local_storage') {
+    } else if (type === 'local_storage') {
       filteredCredentials = {
         disk: formData.credentials.disk,
         path: formData.credentials.path,
       };
     }
-    
-    router.post('/connections', {
-      name: formData.name,
-      type: selectedType,
-      credentials: filteredCredentials,
-    }, {
-      preserveScroll: true,
-      onError: (errors) => {
-        setErrors(errors as FormErrors);
-        setProcessing(false);
+
+    router.post(
+      '/connections',
+      {
+        name: formData.name,
+        type: selectedTechnology.type,
+        credentials: filteredCredentials,
       },
-      onSuccess: () => {
-        setProcessing(false);
-      },
-    });
+      {
+        preserveScroll: true,
+        onError: (errors) => {
+          setErrors(errors as FormErrors);
+          setProcessing(false);
+        },
+        onSuccess: () => {
+          setProcessing(false);
+        },
+      }
+    );
   };
 
-  const updateCredentials = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      credentials: { ...prev.credentials, [field]: value }
-    }));
-  };
-
-  const handleTypeChange = (value: string) => {
-    setSelectedType(value);
+  const handleCancel = () => {
+    window.history.back();
   };
 
   return (
@@ -108,193 +143,30 @@ export default function Create() {
       <Head title="Create Connection" />
 
       <div className="py-12">
-        <div className="mx-auto max-w-2xl sm:px-6 lg:px-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create New Connection</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Connection Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    required
-                  />
-                  {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
-                </div>
+        <div className="mx-auto max-w-3xl sm:px-6 lg:px-8">
+          {step === 'category' && <CategoryStep onSelect={handleCategorySelect} />}
 
-                <div>
-                  <Label htmlFor="type">Connection Type</Label>
-                  <Select value={selectedType} onValueChange={handleTypeChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="s3">S3 Source</SelectItem>
-                      <SelectItem value="s3_destination">S3 Destination</SelectItem>
-                      <SelectItem value="mongodb">MongoDB</SelectItem>
-                      <SelectItem value="google_drive">Google Drive</SelectItem>
-                      <SelectItem value="local_storage">Local Storage</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
-                </div>
+          {step === 'technology' && selectedCategory && (
+            <TechnologyGrid
+              category={selectedCategory}
+              onSelect={handleTechnologySelect}
+              onBack={handleBackToCategory}
+            />
+          )}
 
-                {(selectedType === 's3' || selectedType === 's3_destination') && (
-                  <>
-                    <div>
-                      <Label htmlFor="access_key">Access Key</Label>
-                      <Input
-                        id="access_key"
-                        value={formData.credentials.access_key}
-                        onChange={(e) => updateCredentials('access_key', e.target.value)}
-                        required
-                      />
-                      {errors['credentials.access_key'] && <p className="text-sm text-red-500">{errors['credentials.access_key']}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor="secret_key">Secret Key</Label>
-                      <Input
-                        id="secret_key"
-                        type="password"
-                        value={formData.credentials.secret_key}
-                        onChange={(e) => updateCredentials('secret_key', e.target.value)}
-                        required
-                      />
-                      {errors['credentials.secret_key'] && <p className="text-sm text-red-500">{errors['credentials.secret_key']}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor="region">Region</Label>
-                      <Input
-                        id="region"
-                        value={formData.credentials.region}
-                        onChange={(e) => updateCredentials('region', e.target.value)}
-                        required
-                      />
-                      {errors['credentials.region'] && <p className="text-sm text-red-500">{errors['credentials.region']}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor="bucket">Bucket Name</Label>
-                      <Input
-                        id="bucket"
-                        value={formData.credentials.bucket}
-                        onChange={(e) => updateCredentials('bucket', e.target.value)}
-                        required
-                      />
-                      {errors['credentials.bucket'] && <p className="text-sm text-red-500">{errors['credentials.bucket']}</p>}
-                    </div>
-                  </>
-                )}
-
-                {selectedType === 'mongodb' && (
-                  <>
-                    <div>
-                      <Label htmlFor="uri">Connection URI</Label>
-                      <Input
-                        id="uri"
-                        value={formData.credentials.uri}
-                        onChange={(e) => updateCredentials('uri', e.target.value)}
-                        placeholder="mongodb://user:pass@host:27017"
-                        required
-                      />
-                      {errors['credentials.uri'] && <p className="text-sm text-red-500">{errors['credentials.uri']}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor="database">Database Name</Label>
-                      <Input
-                        id="database"
-                        value={formData.credentials.database}
-                        onChange={(e) => updateCredentials('database', e.target.value)}
-                        required
-                      />
-                      {errors['credentials.database'] && <p className="text-sm text-red-500">{errors['credentials.database']}</p>}
-                    </div>
-                  </>
-                )}
-
-                {selectedType === 'google_drive' && (
-                  <>
-                    <div>
-                      <Label htmlFor="access_token">Access Token</Label>
-                      <Input
-                        id="access_token"
-                        value={formData.credentials.access_token}
-                        onChange={(e) => updateCredentials('access_token', e.target.value)}
-                        required
-                      />
-                      {errors['credentials.access_token'] && <p className="text-sm text-red-500">{errors['credentials.access_token']}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor="refresh_token">Refresh Token</Label>
-                      <Input
-                        id="refresh_token"
-                        value={formData.credentials.refresh_token}
-                        onChange={(e) => updateCredentials('refresh_token', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="folder_id">Folder ID (Optional)</Label>
-                      <Input
-                        id="folder_id"
-                        value={formData.credentials.folder_id}
-                        onChange={(e) => updateCredentials('folder_id', e.target.value)}
-                      />
-                    </div>
-                  </>
-                )}
-
-                {selectedType === 'local_storage' && (
-                  <>
-                    <div>
-                      <Label htmlFor="disk">Storage Disk</Label>
-                      <Select 
-                        value={formData.credentials.disk} 
-                        onValueChange={(value) => updateCredentials('disk', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="local">Local (storage/app)</SelectItem>
-                          <SelectItem value="public">Public (storage/app/public)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {errors['credentials.disk'] && <p className="text-sm text-red-500">{errors['credentials.disk']}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor="path">Storage Path</Label>
-                      <Input
-                        id="path"
-                        value={formData.credentials.path}
-                        onChange={(e) => updateCredentials('path', e.target.value)}
-                        placeholder="backups"
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Path relative to the storage disk (e.g., "backups" or "backups/mongodb")
-                      </p>
-                      {errors['credentials.path'] && <p className="text-sm text-red-500">{errors['credentials.path']}</p>}
-                    </div>
-                  </>
-                )}
-
-                {errors.error && <p className="text-sm text-red-500">{errors.error}</p>}
-                {errors.credentials && <p className="text-sm text-red-500">{errors.credentials}</p>}
-
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={processing}>
-                    Create Connection
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => window.history.back()}>
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+          {step === 'form' && selectedTechnology && (
+            <CredentialForm
+              technology={selectedTechnology}
+              formData={formData}
+              errors={errors}
+              processing={processing}
+              onBack={handleBackToTechnology}
+              onNameChange={handleNameChange}
+              onCredentialChange={handleCredentialChange}
+              onSubmit={handleSubmit}
+              onCancel={handleCancel}
+            />
+          )}
         </div>
       </div>
     </AppLayout>
