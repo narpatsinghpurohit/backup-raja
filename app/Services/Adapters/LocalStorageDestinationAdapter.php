@@ -29,9 +29,19 @@ class LocalStorageDestinationAdapter implements DestinationAdapterInterface
         
         $startTime = microtime(true);
         
-        // Upload the file to Laravel storage
-        $fileContents = file_get_contents($archivePath);
-        Storage::disk($disk)->put($fullPath, $fileContents);
+        // Upload the file using streams to avoid memory issues with large files
+        $stream = fopen($archivePath, 'r');
+        if ($stream === false) {
+            throw new \RuntimeException("Failed to open archive file: {$archivePath}");
+        }
+        
+        try {
+            Storage::disk($disk)->writeStream($fullPath, $stream);
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
         
         $duration = round(microtime(true) - $startTime, 2);
         $logService->log($operation, 'info', "Upload completed in {$duration} seconds");
