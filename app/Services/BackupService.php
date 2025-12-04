@@ -71,27 +71,31 @@ class BackupService
         app(LogService::class)->log($operation, 'info', 'Backup resumed by user');
     }
 
-    public function getBackupHistory(array $filters = []): Collection
+    public function getBackupHistory(array $filters = [], int $perPage = 10): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         $query = BackupOperation::with(['sourceConnection', 'destinationConnection'])
             ->orderBy('created_at', 'desc');
 
-        if (isset($filters['status'])) {
+        if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (isset($filters['source_connection_id'])) {
+        if (!empty($filters['source_connection_id'])) {
             $query->where('source_connection_id', $filters['source_connection_id']);
         }
 
-        if (isset($filters['date_from'])) {
+        if (!empty($filters['destination_connection_id'])) {
+            $query->where('destination_connection_id', $filters['destination_connection_id']);
+        }
+
+        if (!empty($filters['date_from'])) {
             $query->where('created_at', '>=', $filters['date_from']);
         }
 
-        if (isset($filters['date_to'])) {
+        if (!empty($filters['date_to'])) {
             $query->where('created_at', '<=', $filters['date_to']);
         }
 
-        return $query->get();
+        return $query->paginate($perPage)->withQueryString();
     }
 }

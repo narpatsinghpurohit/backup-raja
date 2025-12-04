@@ -16,8 +16,8 @@ class BackupController extends Controller
 
     public function index(Request $request)
     {
-        $filters = $request->only(['status', 'source_connection_id', 'date_from', 'date_to']);
-        $backups = $this->backupService->getBackupHistory($filters);
+        $filters = $request->only(['status', 'source_connection_id', 'destination_connection_id', 'date_from', 'date_to']);
+        $backups = $this->backupService->getBackupHistory($filters, 15);
 
         $stats = [
             'total' => BackupOperation::count(),
@@ -26,10 +26,16 @@ class BackupController extends Controller
             'running' => BackupOperation::where('status', 'running')->count(),
         ];
 
+        // Get connections for filter dropdowns
+        $sources = Connection::whereIn('type', ['s3', 'mongodb'])->get(['id', 'name', 'type']);
+        $destinations = Connection::whereIn('type', ['s3_destination', 'google_drive', 'local_storage'])->get(['id', 'name', 'type']);
+
         return Inertia::render('Backups/Index', [
             'backups' => $backups,
             'stats' => $stats,
             'filters' => $filters,
+            'sources' => $sources,
+            'destinations' => $destinations,
         ]);
     }
 
