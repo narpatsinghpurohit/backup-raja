@@ -161,7 +161,7 @@ export default function Welcome({
                                     Flexible Destinations
                                 </h3>
                                 <p className="text-gray-600 dark:text-gray-300">
-                                    Store backups in S3, Google Drive, or local storage. Mix and match as needed.
+                                    Store backups in S3, Google Drive, or server local storage. Mix and match as needed.
                                 </p>
                             </div>
 

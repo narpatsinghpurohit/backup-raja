@@ -167,7 +167,7 @@ export default function Edit({ connection }: Props) {
       mongodb: 'MongoDB',
       google_drive: 'Google Drive',
       s3_destination: 'S3 Destination',
-      local_storage: 'Local Storage',
+      local_storage: 'Server Storage',
     };
     return labels[type] || type;
   };

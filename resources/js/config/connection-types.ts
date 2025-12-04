@@ -48,8 +48,8 @@ export const CONNECTION_TECHNOLOGIES: TechnologyConfig[] = [
   },
   {
     type: 'local_storage',
-    name: 'Local Storage',
-    description: 'Server local filesystem',
+    name: 'Server Storage',
+    description: 'Store backups on the server filesystem',
     category: 'destination',
     icon: 'Folder',
     color: 'bg-gray-500',

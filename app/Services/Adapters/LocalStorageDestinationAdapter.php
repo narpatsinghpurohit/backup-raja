@@ -13,7 +13,7 @@ class LocalStorageDestinationAdapter implements DestinationAdapterInterface
         $disk = $credentials['disk'] ?? 'local';
         $path = $credentials['path'] ?? 'backups';
         
-        $logService->log($operation, 'info', "Destination type: Local Storage");
+        $logService->log($operation, 'info', "Destination type: Server Storage");
         $logService->log($operation, 'info', "Storage disk: {$disk}");
         $logService->log($operation, 'info', "Storage path: {$path}");
         

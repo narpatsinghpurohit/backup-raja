@@ -40,7 +40,7 @@ class LocalStorageConnectionValidator implements ConnectionValidatorInterface
             
             return $content === 'test';
         } catch (\Exception $e) {
-            throw new \RuntimeException('Local storage validation failed: ' . $e->getMessage());
+            throw new \RuntimeException('Server storage validation failed: ' . $e->getMessage());
         }
     }
 }
