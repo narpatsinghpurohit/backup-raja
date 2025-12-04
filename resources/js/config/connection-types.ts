@@ -19,23 +19,25 @@ export const CONNECTION_TECHNOLOGIES: TechnologyConfig[] = [
     icon: 'Database',
     color: 'bg-green-500',
   },
-  {
-    type: 's3',
-    name: 'Amazon S3',
-    description: 'S3 bucket as data source',
-    category: 'source',
-    icon: 'Cloud',
-    color: 'bg-orange-500',
-  },
+  // S3 source hidden - uncomment to enable
+  // {
+  //   type: 's3',
+  //   name: 'Amazon S3',
+  //   description: 'S3 bucket as data source',
+  //   category: 'source',
+  //   icon: 'Cloud',
+  //   color: 'bg-orange-500',
+  // },
   // Destinations
-  {
-    type: 's3_destination',
-    name: 'Amazon S3',
-    description: 'S3 bucket for backup storage',
-    category: 'destination',
-    icon: 'Cloud',
-    color: 'bg-orange-500',
-  },
+  // S3 destination hidden - uncomment to enable
+  // {
+  //   type: 's3_destination',
+  //   name: 'Amazon S3',
+  //   description: 'S3 bucket for backup storage',
+  //   category: 'destination',
+  //   icon: 'Cloud',
+  //   color: 'bg-orange-500',
+  // },
   {
     type: 'google_drive',
     name: 'Google Drive',
