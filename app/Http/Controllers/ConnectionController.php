@@ -92,6 +92,22 @@ class ConnectionController extends Controller
         }
     }
 
+    public function duplicate(Connection $connection)
+    {
+        // For duplication, we expose all credentials (including sensitive ones)
+        // so the user can create a new connection with the same credentials
+        $credentials = $connection->credentials;
+
+        return Inertia::render('Connections/Duplicate', [
+            'baseConnection' => [
+                'id' => $connection->id,
+                'name' => $connection->name,
+                'type' => $connection->type,
+                'credentials' => $credentials,
+            ],
+        ]);
+    }
+
     public function destroy(Connection $connection)
     {
         try {

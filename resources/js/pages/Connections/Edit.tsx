@@ -1,9 +1,10 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Copy } from 'lucide-react';
 import { useState } from 'react';
 
 interface Connection {
@@ -131,8 +132,18 @@ export default function Edit({ connection }: Props) {
         <div className="mx-auto max-w-2xl sm:px-6 lg:px-8">
           <Card>
             <CardHeader>
-              <CardTitle>Edit Connection</CardTitle>
-              <p className="text-sm text-muted-foreground">Type: {getTypeLabel(connection.type)}</p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle>Edit Connection</CardTitle>
+                  <p className="text-sm text-muted-foreground">Type: {getTypeLabel(connection.type)}</p>
+                </div>
+                <Link href={`/connections/${connection.id}/duplicate`}>
+                  <Button variant="outline" size="sm">
+                    <Copy className="mr-2 h-4 w-4" />
+                    Duplicate
+                  </Button>
+                </Link>
+              </div>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">

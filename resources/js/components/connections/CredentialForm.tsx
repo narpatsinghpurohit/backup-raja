@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TechnologyConfig } from '@/config/connection-types';
+import { TechnologyConfig, getPathFieldsForType } from '@/config/connection-types';
 import { TechnologyIcon } from './TechnologyIcon';
+import { HighlightedField } from './HighlightedField';
 import { ArrowLeft } from 'lucide-react';
 
 interface CredentialFormProps {
@@ -20,6 +21,7 @@ interface CredentialFormProps {
   onCredentialChange: (field: string, value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
+  isDuplicateMode?: boolean;
 }
 
 export function CredentialForm({
@@ -32,12 +34,16 @@ export function CredentialForm({
   onCredentialChange,
   onSubmit,
   onCancel,
+  isDuplicateMode = false,
 }: CredentialFormProps) {
+  const pathFields = isDuplicateMode ? getPathFieldsForType(technology.type) : [];
+  const highlightedFieldNames = pathFields.map((f) => f.field);
+
   return (
     <div className="space-y-6">
       <Button variant="ghost" size="sm" onClick={onBack}>
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to technologies
+        {isDuplicateMode ? 'Back' : 'Back to technologies'}
       </Button>
 
       <Card>
@@ -61,7 +67,14 @@ export function CredentialForm({
               {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
             </div>
 
-            {renderCredentialFields(technology.type, formData.credentials, errors, onCredentialChange)}
+            {renderCredentialFields(
+              technology.type,
+              formData.credentials,
+              errors,
+              onCredentialChange,
+              highlightedFieldNames,
+              pathFields
+            )}
 
             {errors.error && <p className="text-sm text-red-500">{errors.error}</p>}
             {errors.credentials && <p className="text-sm text-red-500">{errors.credentials}</p>}
@@ -86,8 +99,20 @@ function renderCredentialFields(
   type: string,
   credentials: Record<string, string>,
   errors: Record<string, string>,
-  onChange: (field: string, value: string) => void
+  onChange: (field: string, value: string) => void,
+  highlightedFieldNames: string[] = [],
+  pathFields: Array<{ field: string; label: string; helpText: string }> = []
 ) {
+  const shouldHighlight = (fieldName: string) => highlightedFieldNames.includes(fieldName);
+  const getHelpText = (fieldName: string) =>
+    pathFields.find((f) => f.field === fieldName)?.helpText || '';
+
+  const wrapIfHighlighted = (fieldName: string, content: React.ReactNode) => {
+    if (shouldHighlight(fieldName)) {
+      return <HighlightedField helpText={getHelpText(fieldName)}>{content}</HighlightedField>;
+    }
+    return content;
+  };
   if (type === 's3' || type === 's3_destination') {
     return (
       <>
@@ -129,18 +154,21 @@ function renderCredentialFields(
             <p className="mt-1 text-sm text-red-500">{errors['credentials.region']}</p>
           )}
         </div>
-        <div>
-          <Label htmlFor="bucket">Bucket Name</Label>
-          <Input
-            id="bucket"
-            value={credentials.bucket || ''}
-            onChange={(e) => onChange('bucket', e.target.value)}
-            required
-          />
-          {errors['credentials.bucket'] && (
-            <p className="mt-1 text-sm text-red-500">{errors['credentials.bucket']}</p>
-          )}
-        </div>
+        {wrapIfHighlighted(
+          'bucket',
+          <div>
+            <Label htmlFor="bucket">Bucket Name</Label>
+            <Input
+              id="bucket"
+              value={credentials.bucket || ''}
+              onChange={(e) => onChange('bucket', e.target.value)}
+              required
+            />
+            {errors['credentials.bucket'] && (
+              <p className="mt-1 text-sm text-red-500">{errors['credentials.bucket']}</p>
+            )}
+          </div>
+        )}
       </>
     );
   }
@@ -161,18 +189,21 @@ function renderCredentialFields(
             <p className="mt-1 text-sm text-red-500">{errors['credentials.uri']}</p>
           )}
         </div>
-        <div>
-          <Label htmlFor="database">Database Name</Label>
-          <Input
-            id="database"
-            value={credentials.database || ''}
-            onChange={(e) => onChange('database', e.target.value)}
-            required
-          />
-          {errors['credentials.database'] && (
-            <p className="mt-1 text-sm text-red-500">{errors['credentials.database']}</p>
-          )}
-        </div>
+        {wrapIfHighlighted(
+          'database',
+          <div>
+            <Label htmlFor="database">Database Name</Label>
+            <Input
+              id="database"
+              value={credentials.database || ''}
+              onChange={(e) => onChange('database', e.target.value)}
+              required
+            />
+            {errors['credentials.database'] && (
+              <p className="mt-1 text-sm text-red-500">{errors['credentials.database']}</p>
+            )}
+          </div>
+        )}
       </>
     );
   }
@@ -200,14 +231,17 @@ function renderCredentialFields(
             onChange={(e) => onChange('refresh_token', e.target.value)}
           />
         </div>
-        <div>
-          <Label htmlFor="folder_id">Folder ID (Optional)</Label>
-          <Input
-            id="folder_id"
-            value={credentials.folder_id || ''}
-            onChange={(e) => onChange('folder_id', e.target.value)}
-          />
-        </div>
+        {wrapIfHighlighted(
+          'folder_id',
+          <div>
+            <Label htmlFor="folder_id">Folder ID (Optional)</Label>
+            <Input
+              id="folder_id"
+              value={credentials.folder_id || ''}
+              onChange={(e) => onChange('folder_id', e.target.value)}
+            />
+          </div>
+        )}
       </>
     );
   }
@@ -233,22 +267,27 @@ function renderCredentialFields(
             <p className="mt-1 text-sm text-red-500">{errors['credentials.disk']}</p>
           )}
         </div>
-        <div>
-          <Label htmlFor="path">Storage Path</Label>
-          <Input
-            id="path"
-            value={credentials.path || ''}
-            onChange={(e) => onChange('path', e.target.value)}
-            placeholder="backups"
-            required
-          />
-          <p className="mt-1 text-xs text-muted-foreground">
-            Path relative to the storage disk (e.g., "backups" or "backups/mongodb")
-          </p>
-          {errors['credentials.path'] && (
-            <p className="mt-1 text-sm text-red-500">{errors['credentials.path']}</p>
-          )}
-        </div>
+        {wrapIfHighlighted(
+          'path',
+          <div>
+            <Label htmlFor="path">Storage Path</Label>
+            <Input
+              id="path"
+              value={credentials.path || ''}
+              onChange={(e) => onChange('path', e.target.value)}
+              placeholder="backups"
+              required
+            />
+            {!highlightedFieldNames.includes('path') && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Path relative to the storage disk (e.g., "backups" or "backups/mongodb")
+              </p>
+            )}
+            {errors['credentials.path'] && (
+              <p className="mt-1 text-sm text-red-500">{errors['credentials.path']}</p>
+            )}
+          </div>
+        )}
       </>
     );
   }

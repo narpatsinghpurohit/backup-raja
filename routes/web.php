@@ -32,6 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 
     // Connection Management Routes
+    Route::get('connections/{connection}/duplicate', [\App\Http\Controllers\ConnectionController::class, 'duplicate'])->name('connections.duplicate');
     Route::resource('connections', \App\Http\Controllers\ConnectionController::class);
 
     // Backup Management Routes

@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { Plus, Trash2, Edit, CheckCircle2, AlertCircle, X, Copy } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { FilterBar } from '@/components/connections/FilterBar';
 import { TechnologyIcon } from '@/components/connections/TechnologyIcon';
@@ -166,11 +166,17 @@ export default function Index({ connections }: Props) {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Link href={`/connections/${connection.id}/edit`}>
                         <Button variant="outline" size="sm">
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
+                        </Button>
+                      </Link>
+                      <Link href={`/connections/${connection.id}/duplicate`}>
+                        <Button variant="outline" size="sm">
+                          <Copy className="mr-2 h-4 w-4" />
+                          Duplicate
                         </Button>
                       </Link>
                       <Button

@@ -62,3 +62,50 @@ export const getTechnologiesByCategory = (category: ConnectionCategory): Technol
 
 export const getCategoryForType = (type: string): ConnectionCategory | undefined =>
   getTechnologyByType(type)?.category;
+
+export interface PathFieldConfig {
+  field: string;
+  label: string;
+  helpText: string;
+}
+
+export const PATH_FIELDS_BY_TYPE: Record<string, PathFieldConfig[]> = {
+  mongodb: [
+    {
+      field: 'database',
+      label: 'Database Name',
+      helpText: 'Change this to connect to a different database with the same credentials',
+    },
+  ],
+  s3: [
+    {
+      field: 'bucket',
+      label: 'Bucket Name',
+      helpText: 'Change this to connect to a different S3 bucket with the same credentials',
+    },
+  ],
+  s3_destination: [
+    {
+      field: 'bucket',
+      label: 'Bucket Name',
+      helpText: 'Change this to store backups in a different S3 bucket',
+    },
+  ],
+  google_drive: [
+    {
+      field: 'folder_id',
+      label: 'Folder ID',
+      helpText: 'Change this to store backups in a different Google Drive folder',
+    },
+  ],
+  local_storage: [
+    {
+      field: 'path',
+      label: 'Storage Path',
+      helpText: 'Change this to store backups in a different directory',
+    },
+  ],
+};
+
+export const getPathFieldsForType = (type: string): PathFieldConfig[] =>
+  PATH_FIELDS_BY_TYPE[type] || [];
