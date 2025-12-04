@@ -7,6 +7,8 @@ use Google\Service\Drive;
 
 class GoogleDriveConnectionValidator implements ConnectionValidatorInterface
 {
+    private array $refreshedCredentials = [];
+
     public function validate(array $credentials): bool
     {
         // Check required fields exist
@@ -16,14 +18,23 @@ class GoogleDriveConnectionValidator implements ConnectionValidatorInterface
 
         try {
             $client = new GoogleClient();
+            // Configure client with OAuth credentials for token refresh
+            $client->setClientId(config('services.google.client_id'));
+            $client->setClientSecret(config('services.google.client_secret'));
             $client->setAccessToken($credentials['access_token']);
 
             // Check if token is expired and refresh if needed
             if ($client->isAccessTokenExpired()) {
                 if (!empty($credentials['refresh_token'])) {
                     $client->fetchAccessTokenWithRefreshToken($credentials['refresh_token']);
+                    // Store refreshed credentials to be retrieved later
+                    $newToken = $client->getAccessToken();
+                    $this->refreshedCredentials = [
+                        'access_token' => $newToken['access_token'],
+                        'refresh_token' => $credentials['refresh_token'],
+                    ];
                 } else {
-                    throw new \RuntimeException('Access token expired and no refresh token provided');
+                    throw new \RuntimeException('Access token expired and no refresh token provided. Please re-authenticate with Google Drive.');
                 }
             }
 
@@ -44,5 +55,13 @@ class GoogleDriveConnectionValidator implements ConnectionValidatorInterface
         } catch (\Exception $e) {
             throw new \RuntimeException('Google Drive connection failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Get refreshed credentials if token was refreshed during validation
+     */
+    public function getRefreshedCredentials(): array
+    {
+        return $this->refreshedCredentials;
     }
 }

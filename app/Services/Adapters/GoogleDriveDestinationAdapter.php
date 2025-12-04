@@ -19,13 +19,32 @@ class GoogleDriveDestinationAdapter implements DestinationAdapterInterface
         }
         
         $client = new GoogleClient();
+        // Set client credentials for token refresh
+        $client->setClientId(config('services.google.client_id'));
+        $client->setClientSecret(config('services.google.client_secret'));
         $client->setAccessToken($credentials['access_token']);
 
         // Refresh token if expired
-        if ($client->isAccessTokenExpired() && isset($credentials['refresh_token'])) {
+        if ($client->isAccessTokenExpired() && isset($credentials['refresh_token']) && !empty($credentials['refresh_token'])) {
             $logService->log($operation, 'info', "Access token expired, refreshing...");
             $client->fetchAccessTokenWithRefreshToken($credentials['refresh_token']);
-            $logService->log($operation, 'info', "Token refreshed successfully");
+            $newToken = $client->getAccessToken();
+            
+            if (isset($newToken['access_token'])) {
+                // Update the client with the new token
+                $client->setAccessToken($newToken['access_token']);
+                
+                // Save the refreshed token back to the database
+                $updatedCredentials = array_merge($credentials, [
+                    'access_token' => $newToken['access_token'],
+                ]);
+                $destination->update(['credentials' => $updatedCredentials]);
+                
+                $logService->log($operation, 'info', "Token refreshed and saved successfully");
+            } else {
+                $logService->log($operation, 'error', "Token refresh failed - no new access token received");
+                throw new \Exception("Failed to refresh Google Drive access token");
+            }
         }
 
         $driveService = new Drive($client);

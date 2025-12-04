@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TechnologyConfig, getPathFieldsForType } from '@/config/connection-types';
 import { TechnologyIcon } from './TechnologyIcon';
 import { HighlightedField } from './HighlightedField';
+import { FolderPickerButton } from './FolderPickerButton';
 import { ArrowLeft } from 'lucide-react';
+import type { GoogleDriveFolder } from '@/types/google-drive';
 
 interface CredentialFormProps {
   technology: TechnologyConfig;
@@ -14,7 +17,7 @@ interface CredentialFormProps {
     name: string;
     credentials: Record<string, string>;
   };
-  errors: Record<string, string>;
+  errors: Record<string, string | undefined>;
   processing: boolean;
   onBack: () => void;
   onNameChange: (name: string) => void;
@@ -22,6 +25,7 @@ interface CredentialFormProps {
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
   isDuplicateMode?: boolean;
+  connectionId?: number; // For folder picker when duplicating Google Drive
 }
 
 export function CredentialForm({
@@ -35,9 +39,21 @@ export function CredentialForm({
   onSubmit,
   onCancel,
   isDuplicateMode = false,
+  connectionId,
 }: CredentialFormProps) {
   const pathFields = isDuplicateMode ? getPathFieldsForType(technology.type) : [];
   const highlightedFieldNames = pathFields.map((f) => f.field);
+  const [selectedFolderPath, setSelectedFolderPath] = useState<string | null>(null);
+
+  const handleFolderSelect = (folder: GoogleDriveFolder | null) => {
+    if (folder) {
+      onCredentialChange('folder_id', folder.id);
+      setSelectedFolderPath(folder.path || `/${folder.name}`);
+    } else {
+      onCredentialChange('folder_id', '');
+      setSelectedFolderPath(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -73,7 +89,11 @@ export function CredentialForm({
               errors,
               onCredentialChange,
               highlightedFieldNames,
-              pathFields
+              pathFields,
+              isDuplicateMode,
+              connectionId,
+              handleFolderSelect,
+              selectedFolderPath
             )}
 
             {errors.error && <p className="text-sm text-red-500">{errors.error}</p>}
@@ -98,10 +118,14 @@ export function CredentialForm({
 function renderCredentialFields(
   type: string,
   credentials: Record<string, string>,
-  errors: Record<string, string>,
+  errors: Record<string, string | undefined>,
   onChange: (field: string, value: string) => void,
   highlightedFieldNames: string[] = [],
-  pathFields: Array<{ field: string; label: string; helpText: string }> = []
+  pathFields: Array<{ field: string; label: string; helpText: string }> = [],
+  isDuplicateMode: boolean = false,
+  connectionId?: number,
+  onFolderSelect?: (folder: GoogleDriveFolder | null) => void,
+  selectedFolderPath?: string | null
 ) {
   const shouldHighlight = (fieldName: string) => highlightedFieldNames.includes(fieldName);
   const getHelpText = (fieldName: string) =>
@@ -234,12 +258,33 @@ function renderCredentialFields(
         {wrapIfHighlighted(
           'folder_id',
           <div>
-            <Label htmlFor="folder_id">Folder ID (Optional)</Label>
-            <Input
-              id="folder_id"
-              value={credentials.folder_id || ''}
-              onChange={(e) => onChange('folder_id', e.target.value)}
-            />
+            <Label htmlFor="folder_id">Backup Folder (Optional)</Label>
+            <div className="flex gap-2">
+              <Input
+                id="folder_id"
+                value={credentials.folder_id || ''}
+                onChange={(e) => onChange('folder_id', e.target.value)}
+                placeholder="Leave empty to use root folder"
+                className="flex-1"
+              />
+              {isDuplicateMode && connectionId && onFolderSelect && (
+                <FolderPickerButton
+                  onFolderSelect={onFolderSelect}
+                  currentFolderId={credentials.folder_id}
+                  connectionId={connectionId}
+                />
+              )}
+            </div>
+            {selectedFolderPath && (
+              <p className="mt-1 text-sm text-green-600">
+                ✓ Selected: {selectedFolderPath}
+              </p>
+            )}
+            {!selectedFolderPath && credentials.folder_id && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Current folder ID: {credentials.folder_id}
+              </p>
+            )}
           </div>
         )}
       </>

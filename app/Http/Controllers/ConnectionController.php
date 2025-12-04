@@ -52,20 +52,29 @@ class ConnectionController extends Controller
         try {
             $data = $request->validated();
 
-            // Check if this is a Google Drive connection with OAuth tokens in session
+            // Check if this is a Google Drive connection
             if ($data['type'] === 'google_drive') {
-                if (!session()->has('google_oauth_tokens')) {
-                    return back()->withErrors(['error' => 'OAuth session expired. Please connect to Google Drive again.']);
+                $credentials = $data['credentials'] ?? [];
+                
+                // If credentials already have access_token (from duplicate), use them directly
+                if (!empty($credentials['access_token'])) {
+                    // Credentials are already complete (duplicate flow)
+                    $data['credentials'] = $credentials;
+                } else {
+                    // New connection - get tokens from OAuth session
+                    if (!session()->has('google_oauth_tokens')) {
+                        return back()->withErrors(['error' => 'OAuth session expired. Please connect to Google Drive again.']);
+                    }
+
+                    $tokens = session('google_oauth_tokens');
+                    $data['credentials'] = array_merge($credentials, [
+                        'access_token' => $tokens['access_token'],
+                        'refresh_token' => $tokens['refresh_token'] ?? '',
+                    ]);
+
+                    // Clear OAuth session data after successful use
+                    session()->forget(['google_oauth_tokens', 'google_oauth_email', 'google_oauth_state']);
                 }
-
-                $tokens = session('google_oauth_tokens');
-                $data['credentials'] = array_merge($data['credentials'] ?? [], [
-                    'access_token' => $tokens['access_token'],
-                    'refresh_token' => $tokens['refresh_token'] ?? '',
-                ]);
-
-                // Clear OAuth session data after successful use
-                session()->forget(['google_oauth_tokens', 'google_oauth_email', 'google_oauth_state']);
             }
 
             $connection = $this->connectionService->createConnection($data);

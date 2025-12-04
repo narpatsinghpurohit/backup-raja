@@ -36,7 +36,14 @@ class UpdateConnectionRequest extends FormRequest
                 $rules['credentials.uri'] = ['required', 'string'];
                 $rules['credentials.database'] = ['required', 'string'];
             } elseif ($type === 'google_drive') {
-                $rules['credentials.access_token'] = ['required', 'string'];
+                // For Google Drive, access_token is only required if it's provided (non-empty)
+                // This allows folder-only updates without requiring new tokens
+                $accessToken = $this->input('credentials.access_token');
+                if (!empty($accessToken)) {
+                    $rules['credentials.access_token'] = ['required', 'string'];
+                } else {
+                    $rules['credentials.access_token'] = ['nullable', 'string'];
+                }
                 $rules['credentials.refresh_token'] = ['nullable', 'string'];
                 $rules['credentials.folder_id'] = ['nullable', 'string'];
             } elseif ($type === 'local_storage') {

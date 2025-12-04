@@ -1,10 +1,11 @@
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getTechnologyByType } from '@/config/connection-types';
 import { TechnologyIcon } from '@/components/connections/TechnologyIcon';
 import { CredentialForm } from '@/components/connections/CredentialForm';
+import { setConnectionId } from '@/services/google-drive-api';
 
 interface BaseConnection {
   id: number;
@@ -17,7 +18,7 @@ interface Props {
   baseConnection: BaseConnection;
 }
 
-interface FormErrors {
+interface FormErrors extends Record<string, string | undefined> {
   name?: string;
   type?: string;
   credentials?: string;
@@ -41,6 +42,14 @@ export default function Duplicate({ baseConnection }: Props) {
     name: `${baseConnection.name} (Copy)`,
     credentials: { ...baseConnection.credentials },
   });
+
+  // Set connection ID for folder picker API calls (uses original connection's tokens)
+  useEffect(() => {
+    if (baseConnection.type === 'google_drive') {
+      setConnectionId(baseConnection.id);
+    }
+    return () => setConnectionId(null);
+  }, [baseConnection.id, baseConnection.type]);
 
   const handleNameChange = (name: string) => {
     setFormData((prev) => ({ ...prev, name }));
@@ -162,6 +171,7 @@ export default function Duplicate({ baseConnection }: Props) {
             onSubmit={handleSubmit}
             onCancel={handleCancel}
             isDuplicateMode={true}
+            connectionId={baseConnection.type === 'google_drive' ? baseConnection.id : undefined}
           />
         </div>
       </div>
