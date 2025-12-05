@@ -42,13 +42,13 @@
   - [ ] 3.2 Create CleanupAdapterInterface
     - Create `app/Services/Adapters/CleanupAdapterInterface.php`
     - Define `deleteFile(string $path, Connection $connection): void` method
-    - _Requirements: 6.1, 6.3_
+    - _Requirements: 6.1_
 
   - [ ] 3.3 Create LocalStorageCleanupAdapter
     - Create `app/Services/Adapters/LocalStorageCleanupAdapter.php`
     - Implement file deletion using Laravel Storage facade
     - Handle case where file doesn't exist gracefully
-    - _Requirements: 6.1, 6.2_
+    - _Requirements: 6.1, 6.2, 6.4_
 
   - [ ] 3.4 Create GoogleDriveCleanupAdapter
     - Create `app/Services/Adapters/GoogleDriveCleanupAdapter.php`
@@ -57,13 +57,19 @@
     - Handle case where file doesn't exist gracefully
     - _Requirements: 6.1, 6.2, 6.3_
 
-  - [ ] 3.5 Create CleanupService
+  - [ ] 3.5 Create S3CleanupAdapter
+    - Create `app/Services/Adapters/S3CleanupAdapter.php`
+    - Implement file deletion via S3 API
+    - Handle case where file doesn't exist gracefully
+    - _Requirements: 6.1, 6.2, 6.3_
+
+  - [ ] 3.6 Create CleanupService
     - Create `app/Services/CleanupService.php`
     - Implement `runCleanup()` to process all expired backups
     - Implement `deleteBackup()` to delete single backup and its files
     - Implement `getCleanupAdapter()` to get appropriate adapter for destination type
     - Return results with processed/deleted/failed counts
-    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 6.1_
+    - _Requirements: 3.2, 3.3, 3.4, 3.5, 6.1_
 
 - [ ] 4. Create cleanup command and scheduler
   - [ ] 4.1 Create CleanupBackups command
@@ -151,4 +157,4 @@
     - Test file deletion for each adapter
     - Test soft delete of backup records
     - Test error handling when file missing
-    - _Requirements: 3.3, 3.4, 6.1, 6.2_
+    - _Requirements: 3.3, 3.4, 6.1, 6.2, 6.3, 6.4_

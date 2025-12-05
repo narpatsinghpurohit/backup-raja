@@ -19,11 +19,11 @@ This feature adds backup retention policies to automatically clean up old backup
 
 #### Acceptance Criteria
 
-1. THE Retention_Policy SHALL support count-based retention (keep last N backups).
-2. THE Retention_Policy SHALL support time-based retention (keep backups for X days).
-3. WHEN creating or editing a backup schedule, THE System SHALL allow configuring a retention policy for that schedule.
-4. THE System SHALL provide a global default retention policy that applies when no schedule-specific policy exists.
-5. THE Retention_Policy SHALL allow setting both count and time limits, applying whichever is more restrictive.
+1. THE Retention_Policy SHALL support count-based retention where the user specifies the number of backups to keep.
+2. THE Retention_Policy SHALL support time-based retention where the user specifies the number of days to retain backups.
+3. WHEN creating or editing a backup schedule, THE System SHALL display retention policy configuration options for that schedule.
+4. WHEN no schedule-specific retention policy exists, THE System SHALL apply the global default retention policy.
+5. WHEN both count and time limits are configured, THE Retention_Policy SHALL apply whichever limit is more restrictive.
 
 ### Requirement 2: Retention Policy Options
 
@@ -31,10 +31,10 @@ This feature adds backup retention policies to automatically clean up old backup
 
 #### Acceptance Criteria
 
-1. THE System SHALL provide preset retention options: Keep Last 5, Keep Last 10, Keep Last 30, Keep 7 Days, Keep 30 Days, Keep 90 Days, Forever.
-2. THE System SHALL allow custom retention values for both count and days.
-3. WHEN "Forever" is selected, THE System SHALL not automatically delete any backups for that policy.
-4. THE System SHALL display estimated storage impact based on retention settings.
+1. THE System SHALL provide preset retention options: Keep Last 5, Keep Last 10, Keep Last 30, Keep 7 Days, Keep 30 Days, Keep 90 Days, and Forever.
+2. THE System SHALL allow custom retention values for both count and days inputs.
+3. WHEN the user selects "Forever" retention, THE System SHALL exclude backups under that policy from automatic deletion.
+4. WHEN retention settings are configured, THE System SHALL display estimated storage impact based on those settings.
 
 ### Requirement 3: Automatic Cleanup Execution
 
@@ -54,10 +54,10 @@ This feature adds backup retention policies to automatically clean up old backup
 
 #### Acceptance Criteria
 
-1. THE System SHALL allow marking individual backups as "protected".
-2. WHILE a backup is protected, THE Cleanup_Job SHALL not delete that backup.
+1. WHEN viewing a backup, THE System SHALL allow the user to mark that backup as a Protected_Backup.
+2. WHILE a backup is marked as a Protected_Backup, THE Cleanup_Job SHALL exclude that backup from deletion.
 3. THE System SHALL display a visual indicator for protected backups in the backup list.
-4. THE System SHALL allow removing protection from a backup to make it eligible for cleanup.
+4. WHEN viewing a Protected_Backup, THE System SHALL allow the user to remove protection to make it eligible for cleanup.
 
 ### Requirement 5: Cleanup Visibility and Control
 
@@ -65,10 +65,10 @@ This feature adds backup retention policies to automatically clean up old backup
 
 #### Acceptance Criteria
 
-1. THE System SHALL display which backups are eligible for deletion before cleanup runs.
-2. THE System SHALL provide a manual "Run Cleanup Now" action.
-3. THE System SHALL log all cleanup operations with details of deleted backups.
-4. WHEN a backup is deleted by cleanup, THE System SHALL retain the BackupOperation metadata for audit purposes.
+1. WHEN viewing cleanup settings, THE System SHALL display a list of backups eligible for deletion based on current retention policies.
+2. THE System SHALL provide a manual "Run Cleanup Now" action accessible from the settings page.
+3. WHEN the Cleanup_Job completes, THE System SHALL log all cleanup operations with details of deleted backups.
+4. WHEN a backup is deleted by the Cleanup_Job, THE System SHALL retain the BackupOperation metadata for audit purposes.
 
 ### Requirement 6: Storage Cleanup
 
@@ -76,6 +76,7 @@ This feature adds backup retention policies to automatically clean up old backup
 
 #### Acceptance Criteria
 
-1. WHEN deleting a backup, THE System SHALL remove the archive file from the destination (Google Drive, Server Storage, S3).
-2. IF the archive file no longer exists, THEN THE System SHALL mark the backup as deleted without error.
-3. THE System SHALL handle cleanup for each destination type appropriately (API calls for cloud, file deletion for local).
+1. WHEN deleting a backup, THE System SHALL remove the archive file from the destination (Google Drive, Local Storage, or S3).
+2. IF the archive file no longer exists at the destination, THEN THE System SHALL mark the backup as deleted without raising an error.
+3. WHEN cleaning up from Google Drive or S3, THE System SHALL use the appropriate API calls for file deletion.
+4. WHEN cleaning up from Local Storage, THE System SHALL use filesystem deletion operations.
