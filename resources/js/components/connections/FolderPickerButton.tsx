@@ -50,6 +50,7 @@ export function FolderPickerButton({
         onClose={() => setModalOpen(false)}
         onSelect={handleSelect}
         currentFolderId={currentFolderId}
+        connectionId={connectionId}
       />
     </>
   );

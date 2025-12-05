@@ -21,6 +21,7 @@ interface FolderPickerModalProps {
   onClose: () => void;
   onSelect: (folder: GoogleDriveFolder | null) => void;
   currentFolderId?: string;
+  connectionId?: number;
 }
 
 export function FolderPickerModal({
@@ -28,6 +29,7 @@ export function FolderPickerModal({
   onClose,
   onSelect,
   currentFolderId,
+  connectionId,
 }: FolderPickerModalProps) {
   const [folders, setFolders] = useState<GoogleDriveFolder[]>([]);
   const [searchResults, setSearchResults] = useState<GoogleDriveFolder[] | null>(null);
@@ -211,8 +213,8 @@ export function FolderPickerModal({
               ) : error ? (
                 <div className="flex h-[200px] flex-col items-center justify-center gap-2 text-center px-4">
                   <p className="text-sm text-destructive">{error}</p>
-                  {error.includes('authenticate') ? (
-                    <a href="/oauth/google/redirect">
+                  {error.toLowerCase().includes('auth') || error.toLowerCase().includes('token') || error.toLowerCase().includes('401') ? (
+                    <a href={connectionId ? `/oauth/google/redirect?connection_id=${connectionId}` : '/oauth/google/redirect'}>
                       <Button variant="default" size="sm">
                         Re-authenticate with Google
                       </Button>

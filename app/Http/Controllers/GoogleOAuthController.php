@@ -12,7 +12,7 @@ class GoogleOAuthController extends Controller
         private GoogleOAuthService $oauthService
     ) {}
 
-    public function redirect()
+    public function redirect(Request $request)
     {
         // Check if OAuth is configured
         if (!$this->oauthService->isConfigured()) {
@@ -23,6 +23,13 @@ class GoogleOAuthController extends Controller
         // Generate random state for CSRF protection
         $state = Str::random(40);
         session(['google_oauth_state' => $state]);
+
+        // Store connection ID if re-authenticating an existing connection
+        if ($request->has('connection_id')) {
+            session(['google_oauth_connection_id' => $request->query('connection_id')]);
+        } else {
+            session()->forget('google_oauth_connection_id');
+        }
 
         // Get authorization URL and redirect
         $authUrl = $this->oauthService->getAuthorizationUrl($state);
@@ -61,7 +68,27 @@ class GoogleOAuthController extends Controller
             // Get user email for connection name suggestion
             $email = $this->oauthService->getUserEmail($tokens['access_token']);
 
-            // Store tokens in session temporarily
+            // Check if this is a re-authentication for an existing connection
+            $connectionId = session('google_oauth_connection_id');
+            if ($connectionId) {
+                $connection = \App\Models\Connection::find($connectionId);
+                if ($connection && $connection->type === 'google_drive') {
+                    // Update existing connection with new tokens
+                    $credentials = $connection->credentials;
+                    $credentials['access_token'] = $tokens['access_token'];
+                    $credentials['refresh_token'] = $tokens['refresh_token'] ?? $credentials['refresh_token'];
+                    $connection->credentials = $credentials;
+                    $connection->save();
+
+                    // Clear session data
+                    session()->forget(['google_oauth_tokens', 'google_oauth_email', 'google_oauth_state', 'google_oauth_connection_id']);
+
+                    return redirect()->route('connections.edit', $connection)
+                        ->with('success', 'Google Drive re-authenticated successfully');
+                }
+            }
+
+            // Store tokens in session temporarily for new connection
             session([
                 'google_oauth_tokens' => $tokens,
                 'google_oauth_email' => $email,
@@ -73,6 +100,14 @@ class GoogleOAuthController extends Controller
             // Redirect to Google Drive connection form
             return redirect()->route('connections.create.google-drive');
         } catch (\Exception $e) {
+            $connectionId = session('google_oauth_connection_id');
+            session()->forget('google_oauth_connection_id');
+            
+            if ($connectionId) {
+                return redirect()->route('connections.edit', $connectionId)
+                    ->withErrors(['error' => 'Failed to re-authenticate: ' . $e->getMessage()]);
+            }
+            
             return redirect()->route('connections.create')
                 ->withErrors(['error' => 'Failed to connect to Google Drive: ' . $e->getMessage()]);
         }

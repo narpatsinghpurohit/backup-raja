@@ -15,8 +15,8 @@ interface BackupSchedule {
 interface BackupOperation {
   id: number;
   status: string;
-  source_connection: { name: string; type: string };
-  destination_connection: { name: string; type: string };
+  source_connection: { id: number; name: string; type: string };
+  destination_connection: { id: number; name: string; type: string };
   backup_schedule: BackupSchedule | null;
   created_at: string;
   started_at: string | null;
@@ -185,8 +185,26 @@ export default function Show({ backup: initialBackup }: Props) {
                 <CardHeader>
                   <CardTitle className="text-red-500">Error</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   <p className="text-sm">{backup.error_message}</p>
+                  {/* Show re-authenticate option for Google Drive auth errors */}
+                  {backup.destination_connection.type === 'google_drive' &&
+                    (backup.error_message.toLowerCase().includes('authentication') ||
+                      backup.error_message.toLowerCase().includes('unauthenticated') ||
+                      backup.error_message.toLowerCase().includes('invalid credentials') ||
+                      backup.error_message.toLowerCase().includes('401') ||
+                      backup.error_message.toLowerCase().includes('token')) && (
+                      <div className="rounded-md bg-yellow-50 p-3 dark:bg-yellow-950/20">
+                        <p className="mb-2 text-sm text-yellow-800 dark:text-yellow-200">
+                          This error appears to be related to Google Drive authentication. Try re-authenticating:
+                        </p>
+                        <a href={`/oauth/google/redirect?connection_id=${backup.destination_connection.id}`}>
+                          <Button variant="outline" size="sm">
+                            Re-authenticate Google Drive
+                          </Button>
+                        </a>
+                      </div>
+                    )}
                 </CardContent>
               </Card>
             )}

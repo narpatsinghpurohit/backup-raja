@@ -38,10 +38,24 @@ class GoogleDriveFolderController extends Controller
             $folders = $this->driveService->listFolders($parentId, $credentials);
 
             return response()->json(['folders' => $folders]);
+        } catch (\Google\Service\Exception $e) {
+            // Check for auth-related errors
+            if ($e->getCode() === 401 || str_contains($e->getMessage(), 'invalid_grant') || str_contains($e->getMessage(), 'Token has been expired or revoked')) {
+                return response()->json([
+                    'error' => 'Google authentication expired. Please re-authenticate.',
+                    'requiresAuth' => true,
+                ], 401);
+            }
+            return response()->json(['error' => $e->getMessage()], 500);
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => $e->getMessage(),
-            ], 500);
+            // Check for auth-related error messages
+            if (str_contains($e->getMessage(), 'invalid_grant') || str_contains($e->getMessage(), 'Token has been expired or revoked')) {
+                return response()->json([
+                    'error' => 'Google authentication expired. Please re-authenticate.',
+                    'requiresAuth' => true,
+                ], 401);
+            }
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 

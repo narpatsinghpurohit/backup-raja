@@ -206,13 +206,26 @@ export default function Edit({ connection }: Props) {
                   {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                 </div>
 
-                {/* Google Drive folder selection - always visible for Google Drive connections */}
+                {/* Google Drive re-authenticate and folder selection */}
                 {connection.type === 'google_drive' && (
-                  <div className="rounded-lg border bg-muted/30 p-4">
-                    <Label htmlFor="folder_id" className="text-base font-medium">Backup Folder</Label>
-                    <p className="mb-3 text-sm text-muted-foreground">
-                      Select where backups will be stored in your Google Drive
-                    </p>
+                  <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+                    <div>
+                      <Label className="text-base font-medium">Google Authentication</Label>
+                      <p className="mb-2 text-sm text-muted-foreground">
+                        If you're having authentication issues or changed your Google credentials, re-authenticate here.
+                      </p>
+                      <a href={`/oauth/google/redirect?connection_id=${connection.id}`}>
+                        <Button type="button" variant="outline" size="sm">
+                          Re-authenticate with Google
+                        </Button>
+                      </a>
+                    </div>
+                    
+                    <div className="border-t pt-4">
+                      <Label htmlFor="folder_id" className="text-base font-medium">Backup Folder</Label>
+                      <p className="mb-3 text-sm text-muted-foreground">
+                        Select where backups will be stored in your Google Drive
+                      </p>
                     <div className="flex gap-2">
                       <Input
                         id="folder_id"
@@ -244,6 +257,7 @@ export default function Edit({ connection }: Props) {
                         Current folder ID: {formData.credentials.folder_id}
                       </p>
                     )}
+                    </div>
                   </div>
                 )}
 
