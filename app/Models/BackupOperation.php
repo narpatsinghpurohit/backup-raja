@@ -12,6 +12,7 @@ class BackupOperation extends Model
     protected $fillable = [
         'source_connection_id',
         'destination_connection_id',
+        'backup_schedule_id',
         'status',
         'archive_path',
         'archive_size',
@@ -35,6 +36,11 @@ class BackupOperation extends Model
     public function destinationConnection(): BelongsTo
     {
         return $this->belongsTo(Connection::class, 'destination_connection_id');
+    }
+
+    public function backupSchedule(): BelongsTo
+    {
+        return $this->belongsTo(BackupSchedule::class);
     }
 
     public function restoreOperations(): HasMany

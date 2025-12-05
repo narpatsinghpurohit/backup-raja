@@ -64,6 +64,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('backups/{backup}/restore', [\App\Http\Controllers\RestoreController::class, 'create'])->name('restores.create');
     Route::post('backups/{backup}/restore', [\App\Http\Controllers\RestoreController::class, 'store'])->name('restores.store');
     Route::get('restores/{restore}', [\App\Http\Controllers\RestoreController::class, 'show'])->name('restores.show');
+
+    // Schedule Management Routes
+    Route::resource('schedules', \App\Http\Controllers\ScheduleController::class);
+    Route::post('schedules/{schedule}/toggle', [\App\Http\Controllers\ScheduleController::class, 'toggle'])->name('schedules.toggle');
+    Route::post('schedules/{schedule}/run', [\App\Http\Controllers\ScheduleController::class, 'runNow'])->name('schedules.run');
 });
 
 require __DIR__.'/settings.php';

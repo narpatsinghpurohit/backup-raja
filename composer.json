@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.2",
         "aws/aws-sdk-php": "^3.362",
+        "dragonmantank/cron-expression": "^3.6",
         "google/apiclient": "^2.18",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/fortify": "^1.30",

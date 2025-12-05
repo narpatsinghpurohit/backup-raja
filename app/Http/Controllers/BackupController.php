@@ -72,7 +72,7 @@ class BackupController extends Controller
 
     public function show(BackupOperation $backup)
     {
-        $backup->load(['sourceConnection', 'destinationConnection', 'logs']);
+        $backup->load(['sourceConnection', 'destinationConnection', 'logs', 'backupSchedule']);
 
         return Inertia::render('Backups/Show', [
             'backup' => $backup,

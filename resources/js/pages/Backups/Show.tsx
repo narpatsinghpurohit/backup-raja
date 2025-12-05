@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,11 +7,17 @@ import TerminalLog from '@/components/TerminalLog';
 import { Pause, Play, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+interface BackupSchedule {
+  id: number;
+  name: string;
+}
+
 interface BackupOperation {
   id: number;
   status: string;
   source_connection: { name: string; type: string };
   destination_connection: { name: string; type: string };
+  backup_schedule: BackupSchedule | null;
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
@@ -143,6 +149,14 @@ export default function Show({ backup: initialBackup }: Props) {
                     {backup.destination_connection.name} ({backup.destination_connection.type})
                   </span>
                 </div>
+                {backup.backup_schedule && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Triggered by:</span>
+                    <Link href={`/schedules/${backup.backup_schedule.id}`} className="text-primary hover:underline">
+                      {backup.backup_schedule.name}
+                    </Link>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Archive Size:</span>
                   <span>{formatBytes(backup.archive_size)}</span>

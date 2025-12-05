@@ -91,6 +91,14 @@ class BackupJob implements ShouldQueue
                 'status' => 'completed',
                 'completed_at' => now(),
             ]);
+
+            // Notify schedule of completion
+            if ($this->operation->backup_schedule_id) {
+                app(\App\Services\ScheduleService::class)->updateScheduleStatus(
+                    $this->operation->backupSchedule,
+                    'completed'
+                );
+            }
         } catch (\Exception $e) {
             // Update status to failed
             $this->operation->update([
@@ -102,6 +110,14 @@ class BackupJob implements ShouldQueue
             $logService->log($this->operation, 'error', '═══════════════════════════════════════════════════');
             $logService->log($this->operation, 'error', 'Backup failed: ' . $e->getMessage());
             $logService->log($this->operation, 'error', 'Exception: ' . get_class($e));
+
+            // Notify schedule of failure
+            if ($this->operation->backup_schedule_id) {
+                app(\App\Services\ScheduleService::class)->updateScheduleStatus(
+                    $this->operation->backupSchedule,
+                    'failed'
+                );
+            }
             
             throw $e;
         }
