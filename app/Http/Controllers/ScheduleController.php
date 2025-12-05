@@ -14,14 +14,44 @@ class ScheduleController extends Controller
         private ScheduleService $scheduleService
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $schedules = BackupSchedule::with(['sourceConnection', 'destinationConnection'])
-            ->orderBy('name')
-            ->get();
+        $query = BackupSchedule::with(['sourceConnection', 'destinationConnection']);
+
+        // Apply filters
+        if ($request->filled('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($request->status === 'paused') {
+                $query->where('is_active', false);
+            }
+        }
+
+        if ($request->filled('source_connection_id')) {
+            $query->where('source_connection_id', $request->source_connection_id);
+        }
+
+        if ($request->filled('destination_connection_id')) {
+            $query->where('destination_connection_id', $request->destination_connection_id);
+        }
+
+        if ($request->filled('last_run_status')) {
+            $query->where('last_run_status', $request->last_run_status);
+        }
+
+        $schedules = $query->orderBy('name')->paginate(10)->withQueryString();
+
+        // Get connections for filter dropdowns
+        $sources = Connection::whereIn('type', ['s3', 'mongodb'])->get(['id', 'name', 'type']);
+        $destinations = Connection::whereIn('type', ['s3_destination', 'google_drive', 'local_storage'])->get(['id', 'name', 'type']);
+
+        $filters = $request->only(['status', 'source_connection_id', 'destination_connection_id', 'last_run_status']);
 
         return Inertia::render('Schedules/Index', [
             'schedules' => $schedules,
+            'sources' => $sources,
+            'destinations' => $destinations,
+            'filters' => $filters,
         ]);
     }
 

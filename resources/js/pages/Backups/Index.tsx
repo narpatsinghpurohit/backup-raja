@@ -1,11 +1,16 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Plus, ChevronLeft, ChevronRight, X, Check, ChevronsUpDown } from 'lucide-react';
 import { getTypeLabel } from '@/config/connection-types';
+import { cn } from '@/lib/utils';
 
 interface BackupOperation {
   id: number;
@@ -61,6 +66,9 @@ interface Props {
 }
 
 export default function Index({ backups, stats, filters, sources, destinations }: Props) {
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const [destOpen, setDestOpen] = useState(false);
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       pending: 'secondary',
@@ -150,8 +158,9 @@ export default function Index({ backups, stats, filters, sources, destinations }
           {/* Filters */}
           <Card className="mb-6">
             <CardContent className="pt-6">
-              <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-wrap items-end gap-4">
                 <div className="min-w-[150px]">
+                  <Label className="mb-2 block text-sm font-medium">Status</Label>
                   <Select
                     value={filters.status || 'all'}
                     onValueChange={(value) => handleFilterChange('status', value)}
@@ -171,42 +180,132 @@ export default function Index({ backups, stats, filters, sources, destinations }
                   </Select>
                 </div>
 
-                <div className="min-w-[180px]">
-                  <Select
-                    value={filters.source_connection_id || 'all'}
-                    onValueChange={(value) => handleFilterChange('source_connection_id', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Sources" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Sources</SelectItem>
-                      {sources.map((source) => (
-                        <SelectItem key={source.id} value={source.id.toString()}>
-                          {source.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="min-w-[200px]">
+                  <Label className="mb-2 block text-sm font-medium">Source</Label>
+                  <Popover open={sourceOpen} onOpenChange={setSourceOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={sourceOpen}
+                        className="w-full justify-between"
+                      >
+                        {filters.source_connection_id
+                          ? sources.find((s) => s.id.toString() === filters.source_connection_id)?.name
+                          : 'All Sources'}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[200px] p-0">
+                      <Command>
+                        <CommandInput placeholder="Search sources..." />
+                        <CommandList>
+                          <CommandEmpty>No source found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="all"
+                              onSelect={() => {
+                                handleFilterChange('source_connection_id', 'all');
+                                setSourceOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  !filters.source_connection_id ? 'opacity-100' : 'opacity-0'
+                                )}
+                              />
+                              All Sources
+                            </CommandItem>
+                            {sources.map((source) => (
+                              <CommandItem
+                                key={source.id}
+                                value={source.name}
+                                onSelect={() => {
+                                  handleFilterChange('source_connection_id', source.id.toString());
+                                  setSourceOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    filters.source_connection_id === source.id.toString()
+                                      ? 'opacity-100'
+                                      : 'opacity-0'
+                                  )}
+                                />
+                                {source.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
-                <div className="min-w-[180px]">
-                  <Select
-                    value={filters.destination_connection_id || 'all'}
-                    onValueChange={(value) => handleFilterChange('destination_connection_id', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Destinations" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Destinations</SelectItem>
-                      {destinations.map((dest) => (
-                        <SelectItem key={dest.id} value={dest.id.toString()}>
-                          {dest.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="min-w-[200px]">
+                  <Label className="mb-2 block text-sm font-medium">Destination</Label>
+                  <Popover open={destOpen} onOpenChange={setDestOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={destOpen}
+                        className="w-full justify-between"
+                      >
+                        {filters.destination_connection_id
+                          ? destinations.find((d) => d.id.toString() === filters.destination_connection_id)?.name
+                          : 'All Destinations'}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[200px] p-0">
+                      <Command>
+                        <CommandInput placeholder="Search destinations..." />
+                        <CommandList>
+                          <CommandEmpty>No destination found.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="all"
+                              onSelect={() => {
+                                handleFilterChange('destination_connection_id', 'all');
+                                setDestOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  !filters.destination_connection_id ? 'opacity-100' : 'opacity-0'
+                                )}
+                              />
+                              All Destinations
+                            </CommandItem>
+                            {destinations.map((dest) => (
+                              <CommandItem
+                                key={dest.id}
+                                value={dest.name}
+                                onSelect={() => {
+                                  handleFilterChange('destination_connection_id', dest.id.toString());
+                                  setDestOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    filters.destination_connection_id === dest.id.toString()
+                                      ? 'opacity-100'
+                                      : 'opacity-0'
+                                  )}
+                                />
+                                {dest.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {hasActiveFilters && (
