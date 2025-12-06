@@ -3,8 +3,10 @@ import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import TerminalLog from '@/components/TerminalLog';
-import { Pause, Play, X } from 'lucide-react';
+import { Pause, Play, X, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface BackupSchedule {
@@ -24,6 +26,8 @@ interface BackupOperation {
   archive_size: number | null;
   archive_path: string | null;
   error_message: string | null;
+  is_protected: boolean;
+  is_deleted: boolean;
   logs: Array<{
     id: number;
     level: string;
@@ -51,6 +55,15 @@ export default function Show({ backup: initialBackup }: Props) {
     if (confirm('Are you sure you want to cancel this backup?')) {
       router.post(`/backups/${backup.id}/cancel`);
     }
+  };
+
+  const handleToggleProtection = () => {
+    router.post(`/backups/${backup.id}/protect`, {}, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setBackup((prev) => ({ ...prev, is_protected: !prev.is_protected }));
+      },
+    });
   };
 
   // Poll for backup status updates
@@ -175,6 +188,28 @@ export default function Show({ backup: initialBackup }: Props) {
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Completed:</span>
                     <span>{new Date(backup.completed_at).toLocaleString()}</span>
+                  </div>
+                )}
+                {backup.status === 'completed' && !backup.is_deleted && (
+                  <div className="flex items-center justify-between border-t pt-3 mt-3">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="protection" className="text-muted-foreground">
+                        Protect from cleanup
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {backup.is_protected && (
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          Protected
+                        </Badge>
+                      )}
+                      <Switch
+                        id="protection"
+                        checked={backup.is_protected}
+                        onCheckedChange={handleToggleProtection}
+                      />
+                    </div>
                   </div>
                 )}
               </CardContent>

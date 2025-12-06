@@ -16,6 +16,8 @@ class BackupSchedule extends Model
         'cron_expression',
         'frequency_preset',
         'is_active',
+        'retention_count',
+        'retention_days',
         'last_run_at',
         'next_run_at',
         'last_run_status',
@@ -29,6 +31,8 @@ class BackupSchedule extends Model
         'next_run_at' => 'datetime',
         'success_count' => 'integer',
         'failure_count' => 'integer',
+        'retention_count' => 'integer',
+        'retention_days' => 'integer',
     ];
 
     public function sourceConnection(): BelongsTo
@@ -82,5 +86,24 @@ class BackupSchedule extends Model
                 $q->whereNull('next_run_at')
                     ->orWhere('next_run_at', '<=', now());
             });
+    }
+
+    public function getRetentionDescription(): string
+    {
+        if (!$this->retention_count && !$this->retention_days) {
+            return 'Keep forever';
+        }
+
+        $parts = [];
+
+        if ($this->retention_count) {
+            $parts[] = "Keep last {$this->retention_count} backups";
+        }
+
+        if ($this->retention_days) {
+            $parts[] = "Keep for {$this->retention_days} days";
+        }
+
+        return implode(' or ', $parts);
     }
 }

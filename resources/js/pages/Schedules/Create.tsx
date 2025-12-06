@@ -34,11 +34,20 @@ export default function Create({ sources, destinations }: Props) {
         frequency_preset: 'daily',
         cron_expression: '',
         is_active: true,
+        retention_type: 'forever',
+        retention_count: '',
+        retention_days: '',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/schedules');
+        post('/schedules', {
+            data: {
+                ...data,
+                retention_count: data.retention_count || null,
+                retention_days: data.retention_days || null,
+            },
+        });
     };
 
     const selectedFrequency = frequencyOptions.find((f) => f.value === data.frequency_preset);
@@ -162,6 +171,71 @@ export default function Create({ sources, destinations }: Props) {
                                         onCheckedChange={(checked) => setData('is_active', checked)}
                                     />
                                     <Label htmlFor="is_active">Active</Label>
+                                </div>
+
+                                <div className="border-t pt-4 mt-4">
+                                    <Label className="text-base font-medium">Retention Policy</Label>
+                                    <p className="text-sm text-muted-foreground mb-3">
+                                        Configure how long backups should be kept
+                                    </p>
+
+                                    <div className="space-y-3">
+                                        <Select
+                                            value={data.retention_type}
+                                            onValueChange={(value) => {
+                                                setData('retention_type', value);
+                                                if (value === 'forever') {
+                                                    setData('retention_count', '');
+                                                    setData('retention_days', '');
+                                                }
+                                            }}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select retention policy" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="forever">Keep Forever</SelectItem>
+                                                <SelectItem value="count">Keep Last N Backups</SelectItem>
+                                                <SelectItem value="days">Keep for X Days</SelectItem>
+                                                <SelectItem value="custom">Custom (Count + Days)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+
+                                        {(data.retention_type === 'count' || data.retention_type === 'custom') && (
+                                            <div>
+                                                <Label htmlFor="retention_count">Keep Last N Backups</Label>
+                                                <Input
+                                                    id="retention_count"
+                                                    type="number"
+                                                    min="1"
+                                                    value={data.retention_count}
+                                                    onChange={(e) => setData('retention_count', e.target.value)}
+                                                    placeholder="e.g., 10"
+                                                />
+                                            </div>
+                                        )}
+
+                                        {(data.retention_type === 'days' || data.retention_type === 'custom') && (
+                                            <div>
+                                                <Label htmlFor="retention_days">Keep for X Days</Label>
+                                                <Input
+                                                    id="retention_days"
+                                                    type="number"
+                                                    min="1"
+                                                    value={data.retention_days}
+                                                    onChange={(e) => setData('retention_days', e.target.value)}
+                                                    placeholder="e.g., 30"
+                                                />
+                                            </div>
+                                        )}
+
+                                        <p className="text-sm text-muted-foreground">
+                                            {data.retention_type === 'forever' && 'Backups will never be automatically deleted'}
+                                            {data.retention_type === 'count' && data.retention_count && `Keep the last ${data.retention_count} backups`}
+                                            {data.retention_type === 'days' && data.retention_days && `Keep backups for ${data.retention_days} days`}
+                                            {data.retention_type === 'custom' && data.retention_count && data.retention_days && `Keep last ${data.retention_count} backups or ${data.retention_days} days (whichever is more restrictive)`}
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <div className="flex gap-2">

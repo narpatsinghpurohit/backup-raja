@@ -59,6 +59,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('backups/{backup}/pause', [\App\Http\Controllers\BackupController::class, 'pause'])->name('backups.pause');
     Route::post('backups/{backup}/cancel', [\App\Http\Controllers\BackupController::class, 'cancel'])->name('backups.cancel');
     Route::post('backups/{backup}/resume', [\App\Http\Controllers\BackupController::class, 'resume'])->name('backups.resume');
+    Route::post('backups/{backup}/protect', [\App\Http\Controllers\BackupController::class, 'toggleProtection'])->name('backups.protect');
 
     // Restore Management Routes
     Route::get('backups/{backup}/restore', [\App\Http\Controllers\RestoreController::class, 'create'])->name('restores.create');
@@ -69,6 +70,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('schedules', \App\Http\Controllers\ScheduleController::class);
     Route::post('schedules/{schedule}/toggle', [\App\Http\Controllers\ScheduleController::class, 'toggle'])->name('schedules.toggle');
     Route::post('schedules/{schedule}/run', [\App\Http\Controllers\ScheduleController::class, 'runNow'])->name('schedules.run');
+
+    // Retention Settings Routes
+    Route::get('settings/retention', [\App\Http\Controllers\RetentionSettingsController::class, 'index'])->name('settings.retention');
+    Route::put('settings/retention', [\App\Http\Controllers\RetentionSettingsController::class, 'update'])->name('settings.retention.update');
+    Route::get('settings/cleanup/preview', [\App\Http\Controllers\RetentionSettingsController::class, 'cleanupPreview'])->name('settings.cleanup.preview');
+    Route::post('settings/cleanup', [\App\Http\Controllers\RetentionSettingsController::class, 'runCleanup'])->name('settings.cleanup.run');
 });
 
 require __DIR__.'/settings.php';

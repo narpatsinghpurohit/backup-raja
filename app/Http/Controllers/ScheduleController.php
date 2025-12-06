@@ -75,6 +75,8 @@ class ScheduleController extends Controller
             'frequency_preset' => 'required|in:hourly,daily,weekly,monthly,custom',
             'cron_expression' => 'required_if:frequency_preset,custom|nullable|string',
             'is_active' => 'boolean',
+            'retention_count' => 'nullable|integer|min:1',
+            'retention_days' => 'nullable|integer|min:1',
         ]);
 
         $this->scheduleService->createSchedule($validated);
@@ -121,6 +123,8 @@ class ScheduleController extends Controller
             'frequency_preset' => 'required|in:hourly,daily,weekly,monthly,custom',
             'cron_expression' => 'required_if:frequency_preset,custom|nullable|string',
             'is_active' => 'boolean',
+            'retention_count' => 'nullable|integer|min:1',
+            'retention_days' => 'nullable|integer|min:1',
         ]);
 
         $this->scheduleService->updateSchedule($schedule, $validated);

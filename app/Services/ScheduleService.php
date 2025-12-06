@@ -22,6 +22,8 @@ class ScheduleService
             'cron_expression' => $cronExpression,
             'frequency_preset' => $data['frequency_preset'],
             'is_active' => $data['is_active'] ?? true,
+            'retention_count' => $data['retention_count'] ?? null,
+            'retention_days' => $data['retention_days'] ?? null,
             'next_run_at' => $this->calculateNextRun($cronExpression),
         ]);
 
@@ -42,6 +44,8 @@ class ScheduleService
             'cron_expression' => $cronExpression,
             'frequency_preset' => $data['frequency_preset'] ?? $schedule->frequency_preset,
             'is_active' => $data['is_active'] ?? $schedule->is_active,
+            'retention_count' => array_key_exists('retention_count', $data) ? $data['retention_count'] : $schedule->retention_count,
+            'retention_days' => array_key_exists('retention_days', $data) ? $data['retention_days'] : $schedule->retention_days,
             'next_run_at' => $this->calculateNextRun($cronExpression),
         ]);
 

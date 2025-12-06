@@ -16,14 +16,15 @@ class BackupController extends Controller
 
     public function index(Request $request)
     {
-        $filters = $request->only(['status', 'source_connection_id', 'destination_connection_id', 'date_from', 'date_to']);
+        $filters = $request->only(['status', 'source_connection_id', 'destination_connection_id', 'date_from', 'date_to', 'show_deleted']);
         $backups = $this->backupService->getBackupHistory($filters, 15);
 
         $stats = [
-            'total' => BackupOperation::count(),
-            'successful' => BackupOperation::where('status', 'completed')->count(),
-            'failed' => BackupOperation::where('status', 'failed')->count(),
-            'running' => BackupOperation::where('status', 'running')->count(),
+            'total' => BackupOperation::notDeleted()->count(),
+            'successful' => BackupOperation::notDeleted()->where('status', 'completed')->count(),
+            'failed' => BackupOperation::notDeleted()->where('status', 'failed')->count(),
+            'running' => BackupOperation::notDeleted()->where('status', 'running')->count(),
+            'deleted' => BackupOperation::where('is_deleted', true)->count(),
         ];
 
         // Get connections for filter dropdowns
@@ -107,5 +108,16 @@ class BackupController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function toggleProtection(BackupOperation $backup)
+    {
+        $backup->update(['is_protected' => !$backup->is_protected]);
+
+        $message = $backup->is_protected
+            ? 'Backup protected from cleanup'
+            : 'Backup protection removed';
+
+        return back()->with('success', $message);
     }
 }

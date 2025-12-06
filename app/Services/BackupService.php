@@ -76,6 +76,13 @@ class BackupService
         $query = BackupOperation::with(['sourceConnection', 'destinationConnection'])
             ->orderBy('created_at', 'desc');
 
+        // Handle deleted filter
+        if (!empty($filters['show_deleted']) && $filters['show_deleted'] === 'deleted') {
+            $query->where('is_deleted', true);
+        } else {
+            $query->notDeleted();
+        }
+
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }

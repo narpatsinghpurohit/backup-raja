@@ -11,6 +11,7 @@ Artisan::command('inspire', function () {
 // Schedule backup cleanup tasks
 Schedule::command('backups:cleanup-temp')->daily();
 Schedule::command('backups:cleanup-logs')->daily();
+Schedule::command('backups:cleanup')->daily()->at('03:00');
 
 // Run scheduled backups every minute
 Schedule::command('backups:run-scheduled')->everyMinute();

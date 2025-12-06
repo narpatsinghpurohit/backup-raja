@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Plus, ChevronLeft, ChevronRight, X, Check, ChevronsUpDown } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, X, Check, ChevronsUpDown, Shield, Trash2 } from 'lucide-react';
 import { getTypeLabel } from '@/config/connection-types';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +19,9 @@ interface BackupOperation {
   destination_connection: { name: string; type: string };
   created_at: string;
   archive_size: number | null;
+  is_protected: boolean;
+  is_deleted: boolean;
+  deleted_at: string | null;
 }
 
 interface PaginationLink {
@@ -49,12 +52,14 @@ interface Stats {
   successful: number;
   failed: number;
   running: number;
+  deleted: number;
 }
 
 interface Filters {
   status?: string;
   source_connection_id?: string;
   destination_connection_id?: string;
+  show_deleted?: string;
 }
 
 interface Props {
@@ -120,7 +125,7 @@ export default function Index({ backups, stats, filters, sources, destinations }
             </Link>
           </div>
 
-          <div className="mb-6 grid gap-4 md:grid-cols-4">
+          <div className="mb-6 grid gap-4 md:grid-cols-5">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Total</CardTitle>
@@ -151,6 +156,20 @@ export default function Index({ backups, stats, filters, sources, destinations }
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-blue-600">{stats.running}</div>
+              </CardContent>
+            </Card>
+            <Card 
+              className={cn("cursor-pointer hover:bg-accent", filters.show_deleted === 'deleted' && "ring-2 ring-primary")}
+              onClick={() => handleFilterChange('show_deleted', filters.show_deleted === 'deleted' ? 'all' : 'deleted')}
+            >
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-1">
+                  <Trash2 className="h-4 w-4" />
+                  Deleted
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-500">{stats.deleted}</div>
               </CardContent>
             </Card>
           </div>
@@ -333,22 +352,38 @@ export default function Index({ backups, stats, filters, sources, destinations }
               <div className="space-y-4">
                 {backups.data.map((backup) => (
                   <Link key={backup.id} href={`/backups/${backup.id}`}>
-                    <div className="flex items-center justify-between rounded-lg border p-4 hover:bg-accent">
+                    <div className={cn("flex items-center justify-between rounded-lg border p-4 hover:bg-accent", backup.is_deleted && "opacity-60")}>
                       <div>
                         <div className="font-medium">
                           {backup.source_connection.name} → {backup.destination_connection.name}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {getTypeLabel(backup.source_connection.type)} → {getTypeLabel(backup.destination_connection.type)} • {new Date(backup.created_at).toLocaleString()}
+                          {backup.is_deleted && backup.deleted_at && (
+                            <span className="text-red-500 ml-2">• Deleted {new Date(backup.deleted_at).toLocaleString()}</span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-sm text-muted-foreground">
-                          {formatBytes(backup.archive_size)}
+                          {backup.is_deleted ? 'File removed' : formatBytes(backup.archive_size)}
                         </div>
-                        <Badge variant={getStatusColor(backup.status) as any}>
-                          {backup.status}
-                        </Badge>
+                        {backup.is_protected && !backup.is_deleted && (
+                          <Badge variant="outline" className="text-green-600 border-green-600 gap-1">
+                            <Shield className="h-3 w-3" />
+                            Protected
+                          </Badge>
+                        )}
+                        {backup.is_deleted ? (
+                          <Badge variant="outline" className="text-red-500 border-red-500 gap-1">
+                            <Trash2 className="h-3 w-3" />
+                            Deleted
+                          </Badge>
+                        ) : (
+                          <Badge variant={getStatusColor(backup.status) as any}>
+                            {backup.status}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </Link>

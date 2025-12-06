@@ -248,4 +248,22 @@ class GoogleDriveService
 
         return '/' . implode('/', array_reverse($path));
     }
+
+    /**
+     * Delete a file from Google Drive
+     */
+    public function deleteFile(string $fileId, array $credentials): void
+    {
+        $this->setAccessToken($credentials);
+        $driveService = new Drive($this->client);
+
+        try {
+            $driveService->files->delete($fileId);
+        } catch (\Google\Service\Exception $e) {
+            // File not found is acceptable - it's already deleted
+            if ($e->getCode() !== 404) {
+                throw new \Exception('Failed to delete file: ' . $e->getMessage());
+            }
+        }
+    }
 }

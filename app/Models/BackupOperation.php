@@ -20,12 +20,18 @@ class BackupOperation extends Model
         'started_at',
         'completed_at',
         'error_message',
+        'is_protected',
+        'is_deleted',
+        'deleted_at',
     ];
 
     protected $casts = [
         'metadata' => 'array',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'is_protected' => 'boolean',
+        'is_deleted' => 'boolean',
+        'deleted_at' => 'datetime',
     ];
 
     public function sourceConnection(): BelongsTo
@@ -71,5 +77,15 @@ class BackupOperation extends Model
     public function scopeFailed($query)
     {
         return $query->where('status', 'failed');
+    }
+
+    public function scopeNotDeleted($query)
+    {
+        return $query->where('is_deleted', false);
+    }
+
+    public function scopeProtected($query)
+    {
+        return $query->where('is_protected', true);
     }
 }
