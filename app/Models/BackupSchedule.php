@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use Cron\CronExpression;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Cron\CronExpression;
 
 class BackupSchedule extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'name',
         'source_connection_id',
@@ -53,12 +56,14 @@ class BackupSchedule extends Model
     public function isDue(): bool
     {
         $cron = new CronExpression($this->cron_expression);
+
         return $cron->isDue();
     }
 
     public function getNextRunDate(): \DateTime
     {
         $cron = new CronExpression($this->cron_expression);
+
         return $cron->getNextRunDate();
     }
 
@@ -90,7 +95,7 @@ class BackupSchedule extends Model
 
     public function getRetentionDescription(): string
     {
-        if (!$this->retention_count && !$this->retention_days) {
+        if (! $this->retention_count && ! $this->retention_days) {
             return 'Keep forever';
         }
 
