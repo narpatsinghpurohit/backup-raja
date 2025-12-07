@@ -74,13 +74,13 @@ export default function Index({ backups, stats, filters, sources, destinations }
   const [sourceOpen, setSourceOpen] = useState(false);
   const [destOpen, setDestOpen] = useState(false);
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
+  const getStatusColor = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+    const colors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       pending: 'secondary',
       running: 'default',
-      completed: 'success',
+      completed: 'default',
       failed: 'destructive',
-      paused: 'warning',
+      paused: 'secondary',
       cancelled: 'secondary',
     };
     return colors[status] || 'secondary';
@@ -158,7 +158,7 @@ export default function Index({ backups, stats, filters, sources, destinations }
                 <div className="text-2xl font-bold text-blue-600">{stats.running}</div>
               </CardContent>
             </Card>
-            <Card 
+            <Card
               className={cn("cursor-pointer hover:bg-accent", filters.show_deleted === 'deleted' && "ring-2 ring-primary")}
               onClick={() => handleFilterChange('show_deleted', filters.show_deleted === 'deleted' ? 'all' : 'deleted')}
             >
@@ -380,7 +380,7 @@ export default function Index({ backups, stats, filters, sources, destinations }
                             Deleted
                           </Badge>
                         ) : (
-                          <Badge variant={getStatusColor(backup.status) as any}>
+                          <Badge variant={getStatusColor(backup.status)}>
                             {backup.status}
                           </Badge>
                         )}
@@ -414,7 +414,7 @@ export default function Index({ backups, stats, filters, sources, destinations }
                     <ChevronLeft className="h-4 w-4" />
                     Previous
                   </Button>
-                  
+
                   <div className="flex items-center gap-1">
                     {backups.links.slice(1, -1).map((link, index) => (
                       <Button

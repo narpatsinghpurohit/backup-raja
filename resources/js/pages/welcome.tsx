@@ -1,7 +1,7 @@
 import { dashboard, login, register } from '@/routes';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { Database, HardDrive, Shield, Zap, Eye, Cloud, Server, CheckCircle2, Crown } from 'lucide-react';
+import { Database, Shield, Zap, Eye, Cloud, Server, CheckCircle2, Crown } from 'lucide-react';
 
 export default function Welcome({
     canRegister = true,
@@ -19,7 +19,7 @@ export default function Welcome({
                     rel="stylesheet"
                 />
             </Head>
-            
+
             <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
                 {/* Navigation */}
                 <nav className="border-b border-orange-100 bg-white/80 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/80">
@@ -124,7 +124,7 @@ export default function Welcome({
                                 Everything you need to manage backups like royalty
                             </p>
                         </div>
-                        
+
                         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                             {/* Feature 1 */}
                             <div className="rounded-2xl border border-orange-100 bg-white p-8 shadow-sm transition hover:shadow-lg dark:border-gray-800 dark:bg-gray-900">
@@ -218,7 +218,7 @@ export default function Welcome({
                                 Laravel 12, React 19, Inertia.js, and TypeScript
                             </p>
                         </div>
-                        
+
                         <div className="grid gap-6 md:grid-cols-2">
                             <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 dark:border-gray-800 dark:bg-gray-800">
                                 <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">Backend</h3>
@@ -241,7 +241,7 @@ export default function Welcome({
                                     </li>
                                 </ul>
                             </div>
-                            
+
                             <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 dark:border-gray-800 dark:bg-gray-800">
                                 <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">Frontend</h3>
                                 <ul className="space-y-2">

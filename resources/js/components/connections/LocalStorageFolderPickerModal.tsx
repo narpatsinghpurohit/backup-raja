@@ -79,7 +79,7 @@ export function LocalStorageFolderPickerModal({
       setFolders((prev) =>
         updateFolderInTree(prev, folder.id, { children, isLoading: false })
       );
-    } catch (err) {
+    } catch {
       setFolders((prev) =>
         updateFolderInTree(prev, folder.id, { isLoading: false, isExpanded: false })
       );
@@ -92,7 +92,7 @@ export function LocalStorageFolderPickerModal({
     try {
       const parentPath = selectedFolder?.id || '';
       const newFolder = await createFolder(disk, name, parentPath);
-      
+
       if (parentPath) {
         setFolders((prev) =>
           updateFolderInTree(prev, parentPath, {
@@ -102,11 +102,11 @@ export function LocalStorageFolderPickerModal({
           })
         );
       } else {
-        setFolders((prev) => [...prev, newFolder].sort((a, b) => 
+        setFolders((prev) => [...prev, newFolder].sort((a, b) =>
           a.name.toLowerCase().localeCompare(b.name.toLowerCase())
         ));
       }
-      
+
       setSelectedFolder(newFolder);
       setCreateDialogOpen(false);
       setSuccessMessage(`Folder "${name}" created successfully`);

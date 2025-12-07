@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
@@ -21,10 +21,16 @@ export default function TerminalLog({ operationId, operationType, initialLogs = 
   const [status, setStatus] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const logsRef = useRef(logs);
 
-  const pollLogs = async () => {
-    const lastLogId = logs.length > 0 ? logs[logs.length - 1].id : 0;
-    const endpoint = operationType === 'backup' 
+  // Keep logsRef in sync with logs
+  useEffect(() => {
+    logsRef.current = logs;
+  }, [logs]);
+
+  const pollLogs = useCallback(async () => {
+    const lastLogId = logsRef.current.length > 0 ? logsRef.current[logsRef.current.length - 1].id : 0;
+    const endpoint = operationType === 'backup'
       ? `/api/backups/${operationId}/logs`
       : `/api/restores/${operationId}/logs`;
 
@@ -40,7 +46,7 @@ export default function TerminalLog({ operationId, operationType, initialLogs = 
     } catch (error) {
       console.error('Failed to fetch logs:', error);
     }
-  };
+  }, [operationId, operationType]);
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -49,14 +55,24 @@ export default function TerminalLog({ operationId, operationType, initialLogs = 
   };
 
   useEffect(() => {
+    // Use a flag to track if this is the initial mount
+    let isMounted = true;
+
+    // Initial poll wrapped in an async IIFE
+    void (async () => {
+      if (isMounted) {
+        await pollLogs();
+      }
+    })();
+
     // Poll every 10 seconds
     const interval = setInterval(pollLogs, 10000);
-    
-    // Initial poll
-    pollLogs();
 
-    return () => clearInterval(interval);
-  }, [operationId, operationType, logs]);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [pollLogs]);
 
   useEffect(() => {
     // Auto-scroll to bottom

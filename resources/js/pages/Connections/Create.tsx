@@ -1,4 +1,4 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { useState } from 'react';
 import { ConnectionCategory, TechnologyConfig } from '@/config/connection-types';

@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Database, HardDrive, RotateCcw, Clock, Settings } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Database, HardDrive, Clock, Settings } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [

@@ -70,10 +70,10 @@ export default function Index({ schedules, sources, destinations, filters }: Pro
     const [sourceOpen, setSourceOpen] = useState(false);
     const [destOpen, setDestOpen] = useState(false);
 
-    const getStatusColor = (status: string | null) => {
+    const getStatusColor = (status: string | null): 'default' | 'secondary' | 'destructive' | 'outline' => {
         if (!status) return 'secondary';
-        const colors: Record<string, string> = {
-            completed: 'success',
+        const colors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+            completed: 'default',
             failed: 'destructive',
         };
         return colors[status] || 'secondary';
@@ -228,7 +228,7 @@ export default function Index({ schedules, sources, destinations, filters }: Pro
                                             >
                                                 {filters.destination_connection_id
                                                     ? destinations.find((d) => d.id.toString() === filters.destination_connection_id)
-                                                          ?.name
+                                                        ?.name
                                                     : 'All Destinations'}
                                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                             </Button>
@@ -361,7 +361,7 @@ export default function Index({ schedules, sources, destinations, filters }: Pro
                                             </div>
 
                                             {schedule.last_run_status && (
-                                                <Badge variant={getStatusColor(schedule.last_run_status) as any}>
+                                                <Badge variant={getStatusColor(schedule.last_run_status)}>
                                                     {schedule.last_run_status}
                                                 </Badge>
                                             )}

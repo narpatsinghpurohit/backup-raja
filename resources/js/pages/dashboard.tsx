@@ -5,7 +5,7 @@ import { Head, Link } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Database, HardDrive, Activity, Plus } from 'lucide-react';
+import { Database, Activity, Plus } from 'lucide-react';
 import { getTypeLabel } from '@/config/connection-types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -16,35 +16,35 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 interface BackupOperation {
-  id: number;
-  status: string;
-  source_connection: { name: string; type: string };
-  destination_connection: { name: string; type: string };
-  created_at: string;
+    id: number;
+    status: string;
+    source_connection: { name: string; type: string };
+    destination_connection: { name: string; type: string };
+    created_at: string;
 }
 
 
 interface Stats {
-  total_backups: number;
-  successful_backups: number;
-  failed_backups: number;
-  total_connections: number;
+    total_backups: number;
+    successful_backups: number;
+    failed_backups: number;
+    total_connections: number;
 }
 
 interface Props {
-  connections: number;
-  recentBackups: BackupOperation[];
-  stats: Stats;
+    connections: number;
+    recentBackups: BackupOperation[];
+    stats: Stats;
 }
 
-export default function Dashboard({ connections, recentBackups, stats }: Props) {
-    const getStatusColor = (status: string) => {
-        const colors: Record<string, string> = {
+export default function Dashboard({ recentBackups, stats }: Props) {
+    const getStatusColor = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+        const colors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
             pending: 'secondary',
             running: 'default',
-            completed: 'success',
+            completed: 'default',
             failed: 'destructive',
-            paused: 'warning',
+            paused: 'secondary',
             cancelled: 'secondary',
         };
         return colors[status] || 'secondary';
@@ -136,7 +136,7 @@ export default function Dashboard({ connections, recentBackups, stats }: Props) 
                                                     {getTypeLabel(backup.source_connection.type)} → {getTypeLabel(backup.destination_connection.type)} • {new Date(backup.created_at).toLocaleString()}
                                                 </div>
                                             </div>
-                                            <Badge variant={getStatusColor(backup.status) as any} className="text-xs">
+                                            <Badge variant={getStatusColor(backup.status)} className="text-xs">
                                                 {backup.status}
                                             </Badge>
                                         </div>

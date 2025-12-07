@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, FolderPlus, RefreshCw, Home, CheckCircle2 } from 'lucide-react';
+import { FolderPlus, RefreshCw, Home, CheckCircle2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -86,7 +86,7 @@ export function FolderPickerModal({
       setFolders((prev) =>
         updateFolderInTree(prev, folder.id, { children, isLoading: false })
       );
-    } catch (err) {
+    } catch {
       setFolders((prev) =>
         updateFolderInTree(prev, folder.id, { isLoading: false, isExpanded: false })
       );
@@ -117,7 +117,7 @@ export function FolderPickerModal({
     try {
       const parentId = selectedFolder?.id || null;
       const newFolder = await createFolder(name, parentId || undefined);
-      
+
       // Add to tree
       if (parentId) {
         setFolders((prev) =>
@@ -130,10 +130,10 @@ export function FolderPickerModal({
       } else {
         setFolders((prev) => [...prev, newFolder]);
       }
-      
+
       setSelectedFolder(newFolder);
       setCreateDialogOpen(false);
-      
+
       // Show success message briefly
       setSuccessMessage(`Folder "${name}" created successfully`);
       setTimeout(() => setSuccessMessage(null), 3000);

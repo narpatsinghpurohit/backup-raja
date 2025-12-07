@@ -142,7 +142,7 @@ export default function Edit({ connection }: Props) {
       payload.type = connection.type;
     }
 
-    router.put(`/connections/${connection.id}`, payload as any, {
+    router.put(`/connections/${connection.id}`, payload as Record<string, string | Record<string, string>>, {
       preserveScroll: true,
       onError: (errors) => {
         setErrors(errors as FormErrors);
@@ -220,43 +220,43 @@ export default function Edit({ connection }: Props) {
                         </Button>
                       </a>
                     </div>
-                    
+
                     <div className="border-t pt-4">
                       <Label htmlFor="folder_id" className="text-base font-medium">Backup Folder</Label>
                       <p className="mb-3 text-sm text-muted-foreground">
                         Select where backups will be stored in your Google Drive
                       </p>
-                    <div className="flex gap-2">
-                      <Input
-                        id="folder_id"
-                        value={formData.credentials.folder_id}
-                        onChange={(e) => {
-                          handleCredentialChange('folder_id', e.target.value);
-                          setSelectedFolderPath(null);
-                          setFolderChanged(true);
-                        }}
-                        placeholder="Leave empty to use root folder"
-                        className="flex-1"
-                      />
-                      <FolderPickerButton
-                        onFolderSelect={(folder) => {
-                          handleFolderSelect(folder);
-                          setFolderChanged(true);
-                        }}
-                        currentFolderId={formData.credentials.folder_id}
-                        connectionId={connection.id}
-                      />
-                    </div>
-                    {selectedFolderPath && (
-                      <p className="mt-1 text-sm text-green-600">
-                        ✓ Selected: {selectedFolderPath}
-                      </p>
-                    )}
-                    {!selectedFolderPath && formData.credentials.folder_id && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Current folder ID: {formData.credentials.folder_id}
-                      </p>
-                    )}
+                      <div className="flex gap-2">
+                        <Input
+                          id="folder_id"
+                          value={formData.credentials.folder_id}
+                          onChange={(e) => {
+                            handleCredentialChange('folder_id', e.target.value);
+                            setSelectedFolderPath(null);
+                            setFolderChanged(true);
+                          }}
+                          placeholder="Leave empty to use root folder"
+                          className="flex-1"
+                        />
+                        <FolderPickerButton
+                          onFolderSelect={(folder) => {
+                            handleFolderSelect(folder);
+                            setFolderChanged(true);
+                          }}
+                          currentFolderId={formData.credentials.folder_id}
+                          connectionId={connection.id}
+                        />
+                      </div>
+                      {selectedFolderPath && (
+                        <p className="mt-1 text-sm text-green-600">
+                          ✓ Selected: {selectedFolderPath}
+                        </p>
+                      )}
+                      {!selectedFolderPath && formData.credentials.folder_id && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Current folder ID: {formData.credentials.folder_id}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}

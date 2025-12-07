@@ -20,17 +20,17 @@ export function getConnectionId(): number | null {
 
 function buildUrl(path: string, params: Record<string, string> = {}): string {
   const url = new URL(path, window.location.origin);
-  
+
   // Add connection_id if set (for editing existing connections)
   if (currentConnectionId) {
     url.searchParams.set('connection_id', currentConnectionId.toString());
   }
-  
+
   // Add other params
   Object.entries(params).forEach(([key, value]) => {
     if (value) url.searchParams.set(key, value);
   });
-  
+
   return url.toString();
 }
 
@@ -40,14 +40,14 @@ async function handleResponse<T>(response: Response): Promise<T> {
     if (response.status === 419) {
       throw new Error('Session expired. Please refresh the page and try again.');
     }
-    
+
     try {
       const error: FolderErrorResponse = await response.json();
       if (error.requiresAuth) {
         throw new Error('AUTH_REQUIRED');
       }
       throw new Error(error.error || 'An error occurred');
-    } catch (parseError) {
+    } catch {
       // If we can't parse the error response, throw a generic error
       throw new Error(`Request failed with status ${response.status}`);
     }
@@ -57,7 +57,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 export async function listFolders(parentId?: string): Promise<GoogleDriveFolder[]> {
   const url = buildUrl(API_BASE, parentId ? { parent_id: parentId } : {});
-  
+
   const response = await fetch(url, {
     headers: {
       Accept: 'application/json',
@@ -76,7 +76,7 @@ function getCsrfToken(): string {
   if (metaToken) {
     return metaToken;
   }
-  
+
   // Try XSRF-TOKEN cookie (Laravel sets this)
   const cookies = document.cookie.split(';');
   for (const cookie of cookies) {
@@ -85,28 +85,28 @@ function getCsrfToken(): string {
       return decodeURIComponent(value);
     }
   }
-  
+
   return '';
 }
 
 export async function createFolder(name: string, parentId?: string): Promise<GoogleDriveFolder> {
   const csrfToken = getCsrfToken();
   const url = buildUrl(API_BASE);
-  
+
   if (!csrfToken) {
     console.warn('No CSRF token found');
   }
-  
+
   const body: Record<string, unknown> = {
     name,
     parent_id: parentId || null,
   };
-  
+
   // Include connection_id in body for POST requests
   if (currentConnectionId) {
     body.connection_id = currentConnectionId;
   }
-  
+
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -126,7 +126,7 @@ export async function createFolder(name: string, parentId?: string): Promise<Goo
 
 export async function getFolderDetails(folderId: string): Promise<GoogleDriveFolder> {
   const url = buildUrl(`${API_BASE}/${encodeURIComponent(folderId)}`);
-  
+
   const response = await fetch(url, {
     headers: {
       Accept: 'application/json',
@@ -141,7 +141,7 @@ export async function getFolderDetails(folderId: string): Promise<GoogleDriveFol
 
 export async function searchFolders(query: string): Promise<GoogleDriveFolder[]> {
   const url = buildUrl(`${API_BASE}/search`, { q: query });
-  
+
   const response = await fetch(url, {
     headers: {
       Accept: 'application/json',

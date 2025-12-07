@@ -41,13 +41,13 @@ interface Props {
 }
 
 export default function Show({ schedule, recentRuns }: Props) {
-    const getStatusColor = (status: string) => {
-        const colors: Record<string, string> = {
+    const getStatusColor = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+        const colors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
             pending: 'secondary',
             running: 'default',
-            completed: 'success',
+            completed: 'default',
             failed: 'destructive',
-            paused: 'warning',
+            paused: 'secondary',
             cancelled: 'secondary',
         };
         return colors[status] || 'secondary';
@@ -178,7 +178,7 @@ export default function Show({ schedule, recentRuns }: Props) {
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Last Status:</span>
                                     {schedule.last_run_status ? (
-                                        <Badge variant={getStatusColor(schedule.last_run_status) as any}>
+                                        <Badge variant={getStatusColor(schedule.last_run_status)}>
                                             {schedule.last_run_status}
                                         </Badge>
                                     ) : (
@@ -208,7 +208,7 @@ export default function Show({ schedule, recentRuns }: Props) {
                                                 <div className="text-sm text-muted-foreground">
                                                     Duration: {calculateDuration(run.created_at, run.completed_at)}
                                                 </div>
-                                                <Badge variant={getStatusColor(run.status) as any}>
+                                                <Badge variant={getStatusColor(run.status)}>
                                                     {run.status}
                                                 </Badge>
                                             </div>

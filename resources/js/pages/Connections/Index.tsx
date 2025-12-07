@@ -27,19 +27,21 @@ interface Props {
 }
 
 export default function Index({ connections }: Props) {
-  const { flash } = usePage<any>().props;
-  const [showFlash, setShowFlash] = useState(false);
+  const { flash } = usePage<{ flash?: { success?: string; error?: string } }>().props;
+  const hasFlash = Boolean(flash?.success || flash?.error);
+  const [showFlash, setShowFlash] = useState(hasFlash);
   const [selectedCategory, setSelectedCategory] = useState<ConnectionCategory | 'all'>('all');
   const [selectedTechnology, setSelectedTechnology] = useState<string | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Use a ref to track flash changes and sync with timer
   useEffect(() => {
-    if (flash?.success || flash?.error) {
-      setShowFlash(true);
+    if (hasFlash) {
       const timer = setTimeout(() => setShowFlash(false), 5000);
       return () => clearTimeout(timer);
     }
-  }, [flash]);
+    return undefined;
+  }, [hasFlash]);
 
   const filteredConnections = useMemo(() => {
     return connections.filter((connection) => {
@@ -94,9 +96,6 @@ export default function Index({ connections }: Props) {
     setSelectedTechnology('all');
     setSearchQuery('');
   };
-
-  const hasActiveFilters =
-    selectedCategory !== 'all' || selectedTechnology !== 'all' || searchQuery !== '';
 
   return (
     <AppLayout>

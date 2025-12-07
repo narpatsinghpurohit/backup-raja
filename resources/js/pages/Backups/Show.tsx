@@ -85,13 +85,13 @@ export default function Show({ backup: initialBackup }: Props) {
     }
   }, [backup.id, backup.status]);
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
+  const getStatusColor = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+    const colors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       pending: 'secondary',
       running: 'default',
-      completed: 'success',
+      completed: 'default',
       failed: 'destructive',
-      paused: 'warning',
+      paused: 'secondary',
       cancelled: 'secondary',
     };
     return colors[status] || 'secondary';
@@ -148,7 +148,7 @@ export default function Show({ backup: initialBackup }: Props) {
               <CardContent className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Status:</span>
-                  <Badge variant={getStatusColor(backup.status) as any}>{backup.status}</Badge>
+                  <Badge variant={getStatusColor(backup.status)}>{backup.status}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Source:</span>
