@@ -4,10 +4,10 @@ namespace App\Services;
 
 use App\Models\Connection;
 use App\Models\RestoreOperation;
+use App\Services\Adapters\LocalStorageRestoreAdapter;
+use App\Services\Adapters\MongoRestoreAdapter;
 use App\Services\Adapters\RestoreAdapterInterface;
 use App\Services\Adapters\S3RestoreAdapter;
-use App\Services\Adapters\MongoRestoreAdapter;
-use App\Services\Adapters\LocalStorageRestoreAdapter;
 
 class RestoreExecutor
 {
@@ -15,7 +15,20 @@ class RestoreExecutor
     {
         $backupOperation = $operation->backupOperation;
         $destinationConnection = $operation->destinationConnection;
-        $config = $operation->destination_config;
+        $config = $operation->destination_config ?? [];
+
+        // Add source database from backup metadata for MongoDB restores
+        if ($destinationConnection->type === 'mongodb') {
+            $backupMetadata = $backupOperation->metadata ?? [];
+            $sourceConnection = $backupOperation->sourceConnection;
+
+            // Get source database from backup metadata or source connection
+            if (! isset($config['source_database'])) {
+                $config['source_database'] = $backupMetadata['source_database']
+                    ?? $sourceConnection->credentials['database']
+                    ?? null;
+            }
+        }
 
         // Download archive from backup location
         $archivePath = $this->downloadArchive($backupOperation->archive_path);
@@ -23,11 +36,11 @@ class RestoreExecutor
         // Get appropriate restore adapter
         $restoreAdapter = $this->getRestoreAdapter($destinationConnection);
 
-        // Execute restore
-        $restoreAdapter->restore($archivePath, $destinationConnection, $config);
+        // Execute restore with operation for logging
+        $restoreAdapter->restore($archivePath, $destinationConnection, $config, $operation);
 
         // Verify restoration
-        if (!$restoreAdapter->verify()) {
+        if (! $restoreAdapter->verify()) {
             throw new \Exception('Restore verification failed');
         }
 
@@ -42,12 +55,12 @@ class RestoreExecutor
         // For now, assume the archive is accessible locally or via URL
         // In production, this would download from S3/Google Drive
         $tempPath = storage_path('app/temp/restores');
-        if (!file_exists($tempPath)) {
+        if (! file_exists($tempPath)) {
             mkdir($tempPath, 0755, true);
         }
 
-        $localPath = $tempPath . '/' . basename($remotePath);
-        
+        $localPath = $tempPath.'/'.basename($remotePath);
+
         // If it's a URL, download it
         if (filter_var($remotePath, FILTER_VALIDATE_URL)) {
             file_put_contents($localPath, file_get_contents($remotePath));
@@ -62,9 +75,9 @@ class RestoreExecutor
     private function getRestoreAdapter(Connection $connection): RestoreAdapterInterface
     {
         return match ($connection->type) {
-            's3', 's3_destination' => new S3RestoreAdapter(),
-            'mongodb' => new MongoRestoreAdapter(),
-            'local_storage' => new LocalStorageRestoreAdapter(),
+            's3', 's3_destination' => new S3RestoreAdapter,
+            'mongodb' => new MongoRestoreAdapter,
+            'local_storage' => new LocalStorageRestoreAdapter,
             default => throw new \InvalidArgumentException("Unsupported restore type: {$connection->type}"),
         };
     }

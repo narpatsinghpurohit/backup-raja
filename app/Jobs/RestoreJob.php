@@ -3,8 +3,8 @@
 namespace App\Jobs;
 
 use App\Models\RestoreOperation;
-use App\Services\RestoreExecutor;
 use App\Services\LogService;
+use App\Services\RestoreExecutor;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -12,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class RestoreJob implements ShouldQueue
 {
-    use Queueable, InteractsWithQueue, SerializesModels;
+    use InteractsWithQueue, Queueable, SerializesModels;
 
     public function __construct(
         public RestoreOperation $operation
@@ -27,28 +27,23 @@ class RestoreJob implements ShouldQueue
                 'started_at' => now(),
             ]);
 
-            $logService->log($this->operation, 'info', 'Restore started');
-
-            // Log connection establishment
+            $logService->log($this->operation, 'info', 'Restore job started');
             $logService->log(
                 $this->operation,
                 'info',
-                "Restoring to destination: {$this->operation->destinationConnection->name}"
+                "Destination: {$this->operation->destinationConnection->name} ({$this->operation->destinationConnection->type})"
             );
 
-            // Execute restore
-            $logService->log($this->operation, 'info', 'Extracting backup archive...');
+            // Execute restore - adapter handles detailed logging
             $executor->execute($this->operation);
 
-            $logService->log($this->operation, 'info', 'Verifying restored data...');
-            
             // Update status to completed
             $this->operation->update([
                 'status' => 'completed',
                 'completed_at' => now(),
             ]);
 
-            $logService->log($this->operation, 'info', 'Restore completed successfully');
+            $logService->log($this->operation, 'info', 'Restore job completed successfully');
         } catch (\Exception $e) {
             // Update status to failed
             $this->operation->update([
@@ -57,7 +52,7 @@ class RestoreJob implements ShouldQueue
                 'error_message' => $e->getMessage(),
             ]);
 
-            $logService->log($this->operation, 'error', 'Restore failed: ' . $e->getMessage(), [
+            $logService->log($this->operation, 'error', 'Restore failed: '.$e->getMessage(), [
                 'exception' => get_class($e),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -75,4 +70,3 @@ class RestoreJob implements ShouldQueue
         ]);
     }
 }
-

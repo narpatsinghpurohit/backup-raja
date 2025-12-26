@@ -22,6 +22,7 @@ class RestoreController extends Controller
         return Inertia::render('Restores/Create', [
             'backup' => $backup->load('sourceConnection'),
             'destinations' => $destinations,
+            'sourceDatabase' => $backup->metadata['source_database'] ?? $backup->sourceConnection->credentials['database'] ?? null,
         ]);
     }
 
