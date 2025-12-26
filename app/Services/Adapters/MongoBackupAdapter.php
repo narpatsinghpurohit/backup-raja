@@ -4,6 +4,7 @@ namespace App\Services\Adapters;
 
 use App\Models\BackupOperation;
 use App\Models\Connection;
+use App\Services\Helpers\MongoUriHelper;
 use App\Services\LogService;
 
 class MongoBackupAdapter implements BackupAdapterInterface
@@ -23,8 +24,8 @@ class MongoBackupAdapter implements BackupAdapterInterface
             mkdir($outputPath, 0755, true);
         }
 
-        // Build mongodump command
-        $uri = $credentials['uri'];
+        // Build mongodump command - escape URI for CLI
+        $uri = MongoUriHelper::escapeUri($credentials['uri']);
         $database = $credentials['database'];
 
         $command = sprintf(

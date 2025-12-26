@@ -4,6 +4,7 @@ namespace App\Services\Adapters;
 
 use App\Models\Connection;
 use App\Models\RestoreOperation;
+use App\Services\Helpers\MongoUriHelper;
 use App\Services\LogService;
 
 class MongoRestoreAdapter implements RestoreAdapterInterface
@@ -22,7 +23,8 @@ class MongoRestoreAdapter implements RestoreAdapterInterface
         $credentials = $destination->credentials;
 
         // Get target URI and database (can be overridden via config)
-        $targetUri = $config['uri'] ?? $credentials['uri'];
+        // Escape URI for CLI tools (handles special chars in passwords)
+        $targetUri = MongoUriHelper::escapeUri($config['uri'] ?? $credentials['uri']);
         $targetDatabase = $config['database'] ?? $credentials['database'];
 
         // Get source database from backup metadata or config
