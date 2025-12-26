@@ -23,6 +23,44 @@ services:
             - sail
         depends_on:
             - pgsql
+    queue:
+        build:
+            context: './docker/8.4'
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP}'
+        image: 'backup-manager/app'
+        command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - laravel.test
+            - pgsql
+        restart: unless-stopped
+    scheduler:
+        build:
+            context: './docker/8.4'
+            dockerfile: Dockerfile
+            args:
+                WWWGROUP: '${WWWGROUP}'
+        image: 'backup-manager/app'
+        command: bash -c "while true; do php artisan schedule:run --verbose; sleep 60; done"
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - laravel.test
+            - pgsql
+        restart: unless-stopped
     pgsql:
         image: 'postgres:15'
         ports:
