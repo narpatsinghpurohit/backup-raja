@@ -72,24 +72,36 @@ class MongoRestoreAdapter implements RestoreAdapterInterface
             $this->log('info', "Target database: {$targetDatabase}");
         }
 
+        // Check if we should drop existing collections
+        $dropExisting = $config['drop_existing'] ?? true; // Default to true for complete restore
+        $dropFlag = $dropExisting ? '--drop' : '';
+        
+        if ($dropExisting) {
+            $this->log('info', '⚠️ Drop mode enabled: Existing collections will be replaced');
+        } else {
+            $this->log('info', 'Merge mode: Existing documents will be preserved, duplicates skipped');
+        }
+
         // Build mongorestore command with namespace renaming support
         if ($sourceDatabase !== $targetDatabase) {
             // Use --nsFrom and --nsTo for database rename
             // IMPORTANT: Pass the PARENT directory containing the database folder, not the database folder itself
             $parentPath = dirname($databasePath);
             $restoreCommand = sprintf(
-                'mongorestore --uri=%s --nsFrom=%s --nsTo=%s --gzip %s 2>&1',
+                'mongorestore --uri=%s --nsFrom=%s --nsTo=%s --gzip %s %s 2>&1',
                 escapeshellarg($targetUri),
                 escapeshellarg("{$sourceDatabase}.*"),
                 escapeshellarg("{$targetDatabase}.*"),
+                $dropFlag,
                 escapeshellarg($parentPath)
             );
         } else {
             // Standard restore without rename - pass the database directory directly
             $restoreCommand = sprintf(
-                'mongorestore --uri=%s --db=%s --gzip %s 2>&1',
+                'mongorestore --uri=%s --db=%s --gzip %s %s 2>&1',
                 escapeshellarg($targetUri),
                 escapeshellarg($targetDatabase),
+                $dropFlag,
                 escapeshellarg($databasePath)
             );
         }

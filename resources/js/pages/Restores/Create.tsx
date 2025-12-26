@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowDown, Database, Server, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -60,6 +61,7 @@ export default function Create({ backup, destinations, sourceDatabase }: Props) 
       prefix: '',
       uri: '',
       database: sourceDatabase || '', // Pre-fill with source database name
+      drop_existing: true, // Default to true for complete restore
     },
   });
 
@@ -217,6 +219,30 @@ export default function Create({ backup, destinations, sourceDatabase }: Props) 
                           ✓ Database will be renamed from <span className="font-mono">{sourceDatabase}</span> to <span className="font-mono">{targetDatabase}</span>
                         </p>
                       )}
+                    </div>
+
+                    {/* Drop Existing Collections Option */}
+                    <div className="flex items-start space-x-3 rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-900 dark:bg-orange-950">
+                      <Checkbox
+                        id="drop_existing"
+                        checked={data.config.drop_existing}
+                        onCheckedChange={(checked) =>
+                          setData('config', { ...data.config, drop_existing: !!checked })
+                        }
+                      />
+                      <div className="grid gap-1.5 leading-none">
+                        <Label
+                          htmlFor="drop_existing"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          Replace existing collections
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          {data.config.drop_existing
+                            ? '⚠️ Existing collections will be DROPPED before restore (recommended for full recovery)'
+                            : 'Merge mode: Existing documents will be preserved, duplicates will be skipped'}
+                        </p>
+                      </div>
                     </div>
 
                     {/* Migration Preview Card */}
