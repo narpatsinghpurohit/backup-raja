@@ -62,16 +62,16 @@ export default function Show({ restore }: Props) {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Source Backup:</span>
-                  <span>#{restore.backup_operation.id}</span>
+                  <span>#{restore.backup_operation?.id}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Original Source:</span>
-                  <span>{restore.backup_operation.source_connection.name}</span>
+                  <span>{restore.backup_operation?.source_connection?.name ?? 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Restore Destination:</span>
                   <span>
-                    {restore.destination_connection.name} ({restore.destination_connection.type})
+                    {restore.destination_connection?.name ?? 'N/A'} ({restore.destination_connection?.type ?? 'N/A'})
                   </span>
                 </div>
                 <div className="flex justify-between">

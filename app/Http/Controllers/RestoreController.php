@@ -17,12 +17,32 @@ class RestoreController extends Controller
 
     public function create(BackupOperation $backup)
     {
-        $destinations = Connection::whereIn('type', ['s3_destination', 'mongodb', 'local_storage'])->get();
+        $backup->load('sourceConnection');
+        $sourceType = $backup->sourceConnection->type;
+        $sourceDatabase = $backup->metadata['source_database'] ?? $backup->sourceConnection->credentials['database'] ?? null;
+
+        // Filter destinations based on source type - only show compatible restore targets
+        $destinations = match ($sourceType) {
+            'mongodb' => Connection::where('type', 'mongodb')->get(),
+            's3', 's3_source' => Connection::where('type', 's3_destination')->get(),
+            default => Connection::whereIn('type', ['s3_destination', 'mongodb', 'local_storage'])->get(),
+        };
+
+        // Transform destinations to include database info for frontend matching
+        $destinationsWithMeta = $destinations->map(function ($dest) use ($sourceDatabase) {
+            return [
+                'id' => $dest->id,
+                'name' => $dest->name,
+                'type' => $dest->type,
+                'database' => $dest->credentials['database'] ?? null,
+                'is_match' => ($dest->credentials['database'] ?? null) === $sourceDatabase,
+            ];
+        });
 
         return Inertia::render('Restores/Create', [
-            'backup' => $backup->load('sourceConnection'),
-            'destinations' => $destinations,
-            'sourceDatabase' => $backup->metadata['source_database'] ?? $backup->sourceConnection->credentials['database'] ?? null,
+            'backup' => $backup,
+            'destinations' => $destinationsWithMeta,
+            'sourceDatabase' => $sourceDatabase,
         ]);
     }
 
@@ -50,7 +70,7 @@ class RestoreController extends Controller
 
     public function show(RestoreOperation $restore)
     {
-        $restore->load(['backupOperation', 'destinationConnection', 'logs']);
+        $restore->load(['backupOperation.sourceConnection', 'destinationConnection', 'logs']);
 
         return Inertia::render('Restores/Show', [
             'restore' => $restore,
