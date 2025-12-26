@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('source_connection_id')->constrained('connections');
             $table->foreignId('destination_connection_id')->constrained('connections');
-            $table->enum('status', ['pending', 'running', 'completed', 'failed', 'paused', 'cancelled']);
+            $table->string('status'); // pending, running, completed, failed, paused, cancelled
             $table->string('archive_path', 500)->nullable();
             $table->bigInteger('archive_size')->nullable();
             $table->json('metadata')->nullable();

@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('backup_operation_id')->constrained('backup_operations');
             $table->foreignId('destination_connection_id')->constrained('connections');
             $table->json('destination_config');
-            $table->enum('status', ['pending', 'running', 'completed', 'failed', 'cancelled']);
+            $table->string('status'); // pending, running, completed, failed, cancelled
             $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->text('error_message')->nullable();

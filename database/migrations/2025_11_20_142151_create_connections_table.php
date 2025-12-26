@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('connections', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->enum('type', ['s3', 'mongodb', 'google_drive', 's3_destination']);
+            $table->string('type'); // s3, mongodb, google_drive, s3_destination, local_storage
             $table->text('credentials'); // encrypted JSON
             $table->boolean('is_active')->default(true);
             $table->timestamp('last_validated_at')->nullable();
