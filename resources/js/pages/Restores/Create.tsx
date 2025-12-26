@@ -5,26 +5,35 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowDown, Database, Server, AlertTriangle } from 'lucide-react';
 
 interface BackupOperation {
   id: number;
   source_connection: { name: string; type: string };
   created_at: string;
   archive_size: number;
+  metadata?: {
+    source_database?: string;
+    collections_count?: number;
+  };
 }
 
 interface Connection {
   id: number;
   name: string;
   type: string;
+  credentials?: {
+    database?: string;
+  };
 }
 
 interface Props {
   backup: BackupOperation;
   destinations: Connection[];
+  sourceDatabase: string | null;
 }
 
-export default function Create({ backup, destinations }: Props) {
+export default function Create({ backup, destinations, sourceDatabase }: Props) {
   const { data, setData, post, processing, errors } = useForm({
     destination_connection_id: '',
     config: {
@@ -43,6 +52,17 @@ export default function Create({ backup, destinations }: Props) {
   const selectedDestination = destinations.find(
     (d) => d.id.toString() === data.destination_connection_id
   );
+
+  const isMongoMigration = selectedDestination?.type === 'mongodb';
+  const targetDatabase = data.config.database || selectedDestination?.credentials?.database || sourceDatabase;
+  const isDatabaseRename = isMongoMigration && sourceDatabase && targetDatabase && sourceDatabase !== targetDatabase;
+
+  const formatBytes = (bytes: number | null) => {
+    if (!bytes) return 'N/A';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+  };
 
   return (
     <AppLayout>
@@ -63,6 +83,19 @@ export default function Create({ backup, destinations }: Props) {
                 <p className="text-sm text-muted-foreground">
                   Created: {new Date(backup.created_at).toLocaleString()}
                 </p>
+                {sourceDatabase && (
+                  <p className="text-sm text-muted-foreground">
+                    Database: <span className="font-mono font-medium">{sourceDatabase}</span>
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  Size: {formatBytes(backup.archive_size)}
+                </p>
+                {backup.metadata?.collections_count && (
+                  <p className="text-sm text-muted-foreground">
+                    Collections: {backup.metadata.collections_count}
+                  </p>
+                )}
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -123,28 +156,85 @@ export default function Create({ backup, destinations }: Props) {
                         id="uri"
                         value={data.config.uri}
                         onChange={(e) => setData('config', { ...data.config, uri: e.target.value })}
-                        placeholder="Leave empty to use default"
+                        placeholder="Leave empty to use connection default"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="database">Target Database (Optional)</Label>
+                      <Label htmlFor="database">Target Database Name</Label>
                       <Input
                         id="database"
                         value={data.config.database}
                         onChange={(e) =>
                           setData('config', { ...data.config, database: e.target.value })
                         }
-                        placeholder="Leave empty to use default"
+                        placeholder={sourceDatabase || 'Enter new database name'}
                       />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Leave empty to keep the same name ({sourceDatabase})
+                      </p>
                     </div>
+
+                    {/* Migration Preview Card */}
+                    {sourceDatabase && (
+                      <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
+                        <h4 className="mb-3 flex items-center gap-2 font-semibold text-blue-900 dark:text-blue-100">
+                          <Database className="h-4 w-4" />
+                          Migration Preview
+                        </h4>
+
+                        <div className="space-y-3">
+                          {/* Source */}
+                          <div className="rounded-md bg-white p-3 dark:bg-gray-800">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Server className="h-4 w-4" />
+                              <span>Source (from backup)</span>
+                            </div>
+                            <div className="mt-1 font-mono text-sm font-medium">
+                              {backup.source_connection.name} / <span className="text-blue-600 dark:text-blue-400">{sourceDatabase}</span>
+                            </div>
+                          </div>
+
+                          {/* Arrow */}
+                          <div className="flex justify-center">
+                            <ArrowDown className="h-5 w-5 text-blue-500" />
+                          </div>
+
+                          {/* Destination */}
+                          <div className="rounded-md bg-white p-3 dark:bg-gray-800">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Server className="h-4 w-4" />
+                              <span>Destination (restore to)</span>
+                            </div>
+                            <div className="mt-1 font-mono text-sm font-medium">
+                              {selectedDestination.name} / <span className={isDatabaseRename ? "text-green-600 dark:text-green-400" : "text-blue-600 dark:text-blue-400"}>
+                                {targetDatabase}
+                              </span>
+                              {isDatabaseRename && (
+                                <span className="ml-2 rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700 dark:bg-green-900 dark:text-green-300">
+                                  RENAMED
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Warning */}
+                        <div className="mt-3 flex items-start gap-2 rounded-md bg-yellow-100 p-2 text-xs text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">
+                          <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                          <span>
+                            This will create or overwrite the database <strong>{targetDatabase}</strong> on the target cluster.
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
 
-                {errors.error && <p className="text-sm text-red-500">{errors.error}</p>}
+                {(errors as Record<string, string>).error && <p className="text-sm text-red-500">{(errors as Record<string, string>).error}</p>}
 
                 <div className="flex gap-2">
                   <Button type="submit" disabled={processing}>
-                    Start Restore
+                    {isMongoMigration ? 'Start Migration' : 'Start Restore'}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => window.history.back()}>
                     Cancel
