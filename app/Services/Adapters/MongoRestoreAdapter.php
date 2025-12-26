@@ -73,15 +73,17 @@ class MongoRestoreAdapter implements RestoreAdapterInterface
         // Build mongorestore command with namespace renaming support
         if ($sourceDatabase !== $targetDatabase) {
             // Use --nsFrom and --nsTo for database rename
+            // IMPORTANT: Pass the PARENT directory containing the database folder, not the database folder itself
+            $parentPath = dirname($databasePath);
             $restoreCommand = sprintf(
                 'mongorestore --uri=%s --nsFrom=%s --nsTo=%s --gzip %s 2>&1',
                 escapeshellarg($targetUri),
                 escapeshellarg("{$sourceDatabase}.*"),
                 escapeshellarg("{$targetDatabase}.*"),
-                escapeshellarg($databasePath)
+                escapeshellarg($parentPath)
             );
         } else {
-            // Standard restore without rename
+            // Standard restore without rename - pass the database directory directly
             $restoreCommand = sprintf(
                 'mongorestore --uri=%s --db=%s --gzip %s 2>&1',
                 escapeshellarg($targetUri),
@@ -104,13 +106,21 @@ class MongoRestoreAdapter implements RestoreAdapterInterface
                 continue;
             }
 
+            // Final summary line - check if it's success or failure
+            if (preg_match('/(\d+)\s+document\(s\)\s+restored\s+successfully.*?(\d+)\s+document\(s\)\s+failed/', $trimmedLine, $matches)) {
+                $restored = (int) $matches[1];
+                $failed = (int) $matches[2];
+                if ($failed === 0) {
+                    $this->log('info', "✅ {$restored} document(s) restored successfully");
+                } else {
+                    $this->log('error', $trimmedLine);
+                }
+            }
             // Log collection progress
-            if (stripos($trimmedLine, 'restoring') !== false ||
-                stripos($trimmedLine, 'finished restoring') !== false ||
-                stripos($trimmedLine, 'documents') !== false) {
+            elseif (stripos($trimmedLine, 'restoring') !== false ||
+                stripos($trimmedLine, 'finished restoring') !== false) {
                 $this->log('info', $trimmedLine);
-            } elseif (stripos($trimmedLine, 'error') !== false ||
-                      stripos($trimmedLine, 'failed') !== false) {
+            } elseif (stripos($trimmedLine, 'error') !== false) {
                 $this->log('error', $trimmedLine);
             }
         }

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import TerminalLog from '@/components/TerminalLog';
-import { Pause, Play, X, Shield } from 'lucide-react';
+import { Pause, Play, X, Shield, RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface BackupSchedule {
@@ -113,6 +113,14 @@ export default function Show({ backup: initialBackup }: Props) {
           <div className="mb-6 flex items-center justify-between">
             <h1 className="text-3xl font-bold">Backup Operation #{backup.id}</h1>
             <div className="flex gap-2">
+              {backup.status === 'completed' && !backup.is_deleted && (
+                <Link href={`/backups/${backup.id}/restore`}>
+                  <Button variant="outline">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Restore
+                  </Button>
+                </Link>
+              )}
               {backup.status === 'running' && (
                 <>
                   <Button onClick={handlePause} variant="outline">

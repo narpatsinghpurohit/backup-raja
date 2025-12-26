@@ -29,6 +29,76 @@ describe('Restore Create', function () {
             ->assertInertia(fn($page) => $page->component('Restores/Create'));
     });
 
+    it('filters destinations to only show matching types for MongoDB backup', function () {
+        // Create backups with different source types
+        $mongoSource = Connection::factory()->mongodb()->create(['name' => 'MongoDB Source']);
+        $s3Destination = Connection::factory()->s3Destination()->create(['name' => 'S3 Dest']);
+        $mongoDestination = Connection::factory()->mongodb()->create(['name' => 'Mongo Dest']);
+
+        $mongoBackup = BackupOperation::factory()
+            ->for($mongoSource, 'sourceConnection')
+            ->for($s3Destination, 'destinationConnection')
+            ->completed()
+            ->create();
+
+        $this->actingAs($this->user)
+            ->get(route('restores.create', $mongoBackup))
+            ->assertOk()
+            ->assertInertia(fn($page) => $page
+                ->component('Restores/Create')
+                ->has('destinations')
+                ->where('destinations', function ($destinations) {
+                    // All destinations should be mongodb type
+                    foreach ($destinations as $dest) {
+                        if ($dest['type'] !== 'mongodb') {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                })
+            );
+    });
+
+    it('passes source database from backup metadata', function () {
+        $this->completedBackup->update([
+            'metadata' => ['source_database' => 'test_database'],
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('restores.create', $this->completedBackup))
+            ->assertOk()
+            ->assertInertia(fn($page) => $page
+                ->component('Restores/Create')
+                ->where('sourceDatabase', 'test_database')
+            );
+    });
+
+    it('marks matching destination with is_match flag', function () {
+        $matchingDestination = Connection::factory()->mongodb()->create([
+            'name' => 'Matching DB',
+            'credentials' => [
+                'uri' => 'mongodb://localhost',
+                'database' => 'my_database',
+            ],
+        ]);
+
+        $this->completedBackup->update([
+            'metadata' => ['source_database' => 'my_database'],
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->get(route('restores.create', $this->completedBackup))
+            ->assertOk();
+
+        // Get destinations from the response and check is_match
+        $destinations = $response->original->getData()['page']['props']['destinations'];
+        $matchingDest = collect($destinations)->firstWhere('id', $matchingDestination->id);
+
+        expect($matchingDest)->not->toBeNull();
+        expect($matchingDest['is_match'])->toBeTrue();
+    });
+
     it('initiates a restore operation', function () {
         // Fake job dispatch to prevent actual restore execution
         Bus::fake();
