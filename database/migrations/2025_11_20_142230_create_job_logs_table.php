@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('loggable_type');
             $table->unsignedBigInteger('loggable_id');
-            $table->enum('level', ['info', 'warning', 'error']);
+            $table->string('level'); // info, warning, error
             $table->text('message');
             $table->json('context')->nullable();
             $table->timestamp('created_at')->useCurrent();
