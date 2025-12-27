@@ -6,6 +6,7 @@ use App\Http\Requests\StoreConnectionRequest;
 use App\Http\Requests\UpdateConnectionRequest;
 use App\Models\Connection;
 use App\Services\ConnectionService;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ConnectionController extends Controller
@@ -14,26 +15,31 @@ class ConnectionController extends Controller
         private ConnectionService $connectionService
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
         $connections = Connection::orderBy('created_at', 'desc')->get();
 
         return Inertia::render('Connections/Index', [
             'connections' => $connections,
+            'filters' => [
+                'tab' => $request->get('tab', 'source'),
+                'search' => $request->get('search', ''),
+                'tech' => $request->get('tech', 'all'),
+            ],
         ]);
     }
 
     public function create()
     {
         return Inertia::render('Connections/Create', [
-            'googleOAuthConfigured' => !empty(config('services.google.client_id')),
+            'googleOAuthConfigured' => ! empty(config('services.google.client_id')),
         ]);
     }
 
     public function createGoogleDrive()
     {
         // Check if OAuth tokens are in session
-        if (!session()->has('google_oauth_tokens')) {
+        if (! session()->has('google_oauth_tokens')) {
             return redirect()->route('connections.create')
                 ->withErrors(['error' => 'No OAuth tokens found. Please connect to Google Drive again.']);
         }
@@ -55,14 +61,14 @@ class ConnectionController extends Controller
             // Check if this is a Google Drive connection
             if ($data['type'] === 'google_drive') {
                 $credentials = $data['credentials'] ?? [];
-                
+
                 // If credentials already have access_token (from duplicate), use them directly
-                if (!empty($credentials['access_token'])) {
+                if (! empty($credentials['access_token'])) {
                     // Credentials are already complete (duplicate flow)
                     $data['credentials'] = $credentials;
                 } else {
                     // New connection - get tokens from OAuth session
-                    if (!session()->has('google_oauth_tokens')) {
+                    if (! session()->has('google_oauth_tokens')) {
                         return back()->withErrors(['error' => 'OAuth session expired. Please connect to Google Drive again.']);
                     }
 
@@ -91,7 +97,7 @@ class ConnectionController extends Controller
         // Prepare credentials for display (mask sensitive fields)
         $credentials = $connection->credentials;
         $safeCredentials = [];
-        
+
         if ($connection->type === 's3' || $connection->type === 's3_destination') {
             $safeCredentials = [
                 'access_key' => $credentials['access_key'] ?? '',

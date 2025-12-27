@@ -3,12 +3,14 @@ import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit, CheckCircle2, AlertCircle, X, Copy } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Trash2, Edit, CheckCircle2, AlertCircle, X, Copy, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { FilterBar } from '@/components/connections/FilterBar';
 import { TechnologyIcon } from '@/components/connections/TechnologyIcon';
 import {
   ConnectionCategory,
+  CONNECTION_TECHNOLOGIES,
   getCategoryForType,
   getTechnologyByType,
 } from '@/config/connection-types';
@@ -22,17 +24,39 @@ interface Connection {
   created_at: string;
 }
 
-interface Props {
-  connections: Connection[];
+interface Filters {
+  tab: 'source' | 'destination';
+  search: string;
+  tech: string;
 }
 
-export default function Index({ connections }: Props) {
+interface Props {
+  connections: Connection[];
+  filters: Filters;
+}
+
+export default function Index({ connections, filters }: Props) {
   const { flash } = usePage<{ flash?: { success?: string; error?: string } }>().props;
   const hasFlash = Boolean(flash?.success || flash?.error);
   const [showFlash, setShowFlash] = useState(hasFlash);
-  const [selectedCategory, setSelectedCategory] = useState<ConnectionCategory | 'all'>('all');
-  const [selectedTechnology, setSelectedTechnology] = useState<string | 'all'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+
+  // Use filters from URL (passed by backend)
+  const activeTab = filters.tab;
+  const searchQuery = filters.search;
+  const selectedTechnology = filters.tech;
+
+  // Get unique technologies for the active tab
+  const technologiesForTab = useMemo(() => {
+    return CONNECTION_TECHNOLOGIES.filter((t) => t.category === activeTab).reduce(
+      (acc, tech) => {
+        if (!acc.find((t) => t.name === tech.name)) {
+          acc.push(tech);
+        }
+        return acc;
+      },
+      [] as typeof CONNECTION_TECHNOLOGIES
+    );
+  }, [activeTab]);
 
   // Use a ref to track flash changes and sync with timer
   useEffect(() => {
@@ -45,23 +69,19 @@ export default function Index({ connections }: Props) {
 
   const filteredConnections = useMemo(() => {
     return connections.filter((connection) => {
+      // Filter by tab (category)
+      const category = getCategoryForType(connection.type);
+      if (category !== activeTab) {
+        return false;
+      }
+
       // Filter by search query
       if (searchQuery && !connection.name.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
 
-      // Filter by category
-      if (selectedCategory !== 'all') {
-        const category = getCategoryForType(connection.type);
-        if (category !== selectedCategory) {
-          return false;
-        }
-      }
-
-
       // Filter by technology
       if (selectedTechnology !== 'all') {
-        // Handle matching by technology name (e.g., both s3 and s3_destination match "Amazon S3")
         const tech = getTechnologyByType(connection.type);
         const selectedTech = getTechnologyByType(selectedTechnology);
         if (tech?.name !== selectedTech?.name) {
@@ -71,7 +91,33 @@ export default function Index({ connections }: Props) {
 
       return true;
     });
-  }, [connections, searchQuery, selectedCategory, selectedTechnology]);
+  }, [connections, activeTab, searchQuery, selectedTechnology]);
+
+  // Update URL with filters
+  const updateFilters = (newFilters: Partial<Filters>) => {
+    const params = {
+      tab: newFilters.tab ?? activeTab,
+      search: newFilters.search ?? searchQuery,
+      tech: newFilters.tech ?? selectedTechnology,
+    };
+
+    // Clean up empty/default values
+    const cleanParams: Record<string, string> = {};
+    if (params.tab !== 'source') cleanParams.tab = params.tab;
+    if (params.search) cleanParams.search = params.search;
+    if (params.tech !== 'all') cleanParams.tech = params.tech;
+
+    router.get('/connections', cleanParams, {
+      preserveState: true,
+      preserveScroll: true,
+      replace: true,
+    });
+  };
+
+  const handleTabChange = (tab: 'source' | 'destination') => {
+    // Reset tech filter when switching tabs (different technologies per tab)
+    updateFilters({ tab, tech: 'all' });
+  };
 
   const handleDelete = (id: number, name: string) => {
     if (
@@ -92,10 +138,12 @@ export default function Index({ connections }: Props) {
   };
 
   const clearFilters = () => {
-    setSelectedCategory('all');
-    setSelectedTechnology('all');
-    setSearchQuery('');
+    updateFilters({ search: '', tech: 'all' });
   };
+
+  // Count connections per tab for the badge
+  const sourceCount = connections.filter((c) => getCategoryForType(c.type) === 'source').length;
+  const destCount = connections.filter((c) => getCategoryForType(c.type) === 'destination').length;
 
   return (
     <AppLayout>
@@ -124,6 +172,7 @@ export default function Index({ connections }: Props) {
             </div>
           )}
 
+          {/* Header */}
           <div className="mb-6 flex items-center justify-between">
             <h1 className="text-3xl font-bold">Connections</h1>
             <Link href="/connections/create">
@@ -134,17 +183,63 @@ export default function Index({ connections }: Props) {
             </Link>
           </div>
 
-          <div className="mb-6">
-            <FilterBar
-              selectedCategory={selectedCategory}
-              selectedTechnology={selectedTechnology}
-              searchQuery={searchQuery}
-              onCategoryChange={setSelectedCategory}
-              onTechnologyChange={setSelectedTechnology}
-              onSearchChange={setSearchQuery}
-            />
+          {/* Tabs */}
+          <div className="mb-6 border-b border-border">
+            <div className="flex gap-6">
+              <button
+                onClick={() => handleTabChange('source')}
+                className={`pb-3 text-sm font-medium transition-colors ${activeTab === 'source'
+                    ? 'border-b-2 border-primary text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                  }`}
+              >
+                Sources
+                <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs">
+                  {sourceCount}
+                </span>
+              </button>
+              <button
+                onClick={() => handleTabChange('destination')}
+                className={`pb-3 text-sm font-medium transition-colors ${activeTab === 'destination'
+                    ? 'border-b-2 border-primary text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                  }`}
+              >
+                Destinations
+                <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs">
+                  {destCount}
+                </span>
+              </button>
+            </div>
           </div>
 
+          {/* Filters */}
+          <div className="mb-6 flex flex-wrap gap-4">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder={`Search ${activeTab === 'source' ? 'sources' : 'destinations'}...`}
+                value={searchQuery}
+                onChange={(e) => updateFilters({ search: e.target.value })}
+                className="pl-10"
+              />
+            </div>
+            <Select value={selectedTechnology} onValueChange={(value) => updateFilters({ tech: value })}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All technologies" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All technologies</SelectItem>
+                {technologiesForTab.map((tech) => (
+                  <SelectItem key={tech.type} value={tech.type}>
+                    {tech.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Connection Cards Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredConnections.map((connection) => {
               const technology = getTechnologyByType(connection.type);
@@ -199,10 +294,13 @@ export default function Index({ connections }: Props) {
             })}
           </div>
 
+          {/* Empty State: No matches */}
           {filteredConnections.length === 0 && connections.length > 0 && (
             <Card>
               <CardContent className="py-12 text-center">
-                <p className="text-muted-foreground">No connections match your filters.</p>
+                <p className="text-muted-foreground">
+                  No {activeTab === 'source' ? 'sources' : 'destinations'} match your filters.
+                </p>
                 <Button variant="outline" className="mt-4" onClick={clearFilters}>
                   <X className="mr-2 h-4 w-4" />
                   Clear filters
@@ -211,6 +309,7 @@ export default function Index({ connections }: Props) {
             </Card>
           )}
 
+          {/* Empty State: No connections at all */}
           {connections.length === 0 && (
             <Card>
               <CardContent className="py-12 text-center">
