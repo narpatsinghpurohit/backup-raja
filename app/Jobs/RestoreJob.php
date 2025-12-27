@@ -14,6 +14,18 @@ class RestoreJob implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, SerializesModels;
 
+    /**
+     * The number of seconds the job can run before timing out.
+     * Set high for large database restores (30 minutes).
+     */
+    public int $timeout = 3600;
+
+    /**
+     * The number of times the job may be attempted.
+     * Don't retry restores - they can leave partial data.
+     */
+    public int $tries = 1;
+
     public function __construct(
         public RestoreOperation $operation
     ) {}
