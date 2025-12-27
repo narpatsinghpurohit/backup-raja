@@ -1,6 +1,6 @@
-import { Database, Cloud, HardDrive, Folder, Server, LucideIcon } from 'lucide-react';
-import { getTechnologyByType } from '@/config/connection-types';
+import { MongoDBIcon, GoogleDriveIcon, AmazonS3Icon, ServerIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { ComponentType } from 'react';
 
 interface TechnologyIconProps {
   type: string;
@@ -9,18 +9,23 @@ interface TechnologyIconProps {
   className?: string;
 }
 
-const iconMap: Record<string, LucideIcon> = {
-  Database,
-  Cloud,
-  HardDrive,
-  Folder,
-  Server,
+interface IconProps {
+  className?: string;
+}
+
+// Map connection types to brand icons
+const iconMap: Record<string, ComponentType<IconProps>> = {
+  mongodb: MongoDBIcon,
+  s3: AmazonS3Icon,
+  s3_destination: AmazonS3Icon,
+  google_drive: GoogleDriveIcon,
+  local_storage: ServerIcon,
 };
 
 const sizeClasses = {
   sm: 'h-4 w-4',
-  md: 'h-5 w-5',
-  lg: 'h-6 w-6',
+  md: 'h-6 w-6',
+  lg: 'h-8 w-8',
 };
 
 const backgroundSizeClasses = {
@@ -35,22 +40,18 @@ export function TechnologyIcon({
   showBackground = false,
   className,
 }: TechnologyIconProps) {
-  const technology = getTechnologyByType(type);
-  const iconName = technology?.icon || 'Server';
-  const color = technology?.color || 'bg-gray-500';
-  const Icon = iconMap[iconName] || Server;
+  const Icon = iconMap[type] || ServerIcon;
 
   if (showBackground) {
     return (
       <div
         className={cn(
-          'flex items-center justify-center rounded-lg',
+          'flex items-center justify-center rounded-lg bg-muted',
           backgroundSizeClasses[size],
-          color,
           className
         )}
       >
-        <Icon className={cn(sizeClasses[size], 'text-white')} />
+        <Icon className={sizeClasses[size]} />
       </div>
     );
   }
