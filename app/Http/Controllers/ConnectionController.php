@@ -25,6 +25,7 @@ class ConnectionController extends Controller
                 'tab' => $request->get('tab', 'source'),
                 'search' => $request->get('search', ''),
                 'tech' => $request->get('tech', 'all'),
+                'view' => $request->get('view', 'grid'),
             ],
         ]);
     }

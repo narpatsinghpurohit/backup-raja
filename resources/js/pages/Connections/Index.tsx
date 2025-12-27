@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Edit, CheckCircle2, AlertCircle, X, Copy, Search } from 'lucide-react';
+import { Plus, Trash2, Edit, CheckCircle2, AlertCircle, X, Copy, Search, LayoutGrid, List } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { TechnologyIcon } from '@/components/connections/TechnologyIcon';
 import {
@@ -28,6 +28,7 @@ interface Filters {
   tab: 'source' | 'destination';
   search: string;
   tech: string;
+  view: 'grid' | 'list';
 }
 
 interface Props {
@@ -44,6 +45,7 @@ export default function Index({ connections, filters }: Props) {
   const activeTab = filters.tab;
   const searchQuery = filters.search;
   const selectedTechnology = filters.tech;
+  const viewMode = filters.view;
 
   // Get unique technologies for the active tab
   const technologiesForTab = useMemo(() => {
@@ -99,6 +101,7 @@ export default function Index({ connections, filters }: Props) {
       tab: newFilters.tab ?? activeTab,
       search: newFilters.search ?? searchQuery,
       tech: newFilters.tech ?? selectedTechnology,
+      view: newFilters.view ?? viewMode,
     };
 
     // Clean up empty/default values
@@ -106,6 +109,7 @@ export default function Index({ connections, filters }: Props) {
     if (params.tab !== 'source') cleanParams.tab = params.tab;
     if (params.search) cleanParams.search = params.search;
     if (params.tech !== 'all') cleanParams.tech = params.tech;
+    if (params.view !== 'grid') cleanParams.view = params.view;
 
     router.get('/connections', cleanParams, {
       preserveState: true,
@@ -189,8 +193,8 @@ export default function Index({ connections, filters }: Props) {
               <button
                 onClick={() => handleTabChange('source')}
                 className={`pb-3 text-sm font-medium transition-colors ${activeTab === 'source'
-                    ? 'border-b-2 border-primary text-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
+                  ? 'border-b-2 border-primary text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
                 Sources
@@ -201,8 +205,8 @@ export default function Index({ connections, filters }: Props) {
               <button
                 onClick={() => handleTabChange('destination')}
                 className={`pb-3 text-sm font-medium transition-colors ${activeTab === 'destination'
-                    ? 'border-b-2 border-primary text-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
+                  ? 'border-b-2 border-primary text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
                 Destinations
@@ -214,7 +218,7 @@ export default function Index({ connections, filters }: Props) {
           </div>
 
           {/* Filters */}
-          <div className="mb-6 flex flex-wrap gap-4">
+          <div className="mb-6 flex flex-wrap items-center gap-4">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -237,62 +241,149 @@ export default function Index({ connections, filters }: Props) {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* View Toggle */}
+            <div className="flex rounded-md border border-border">
+              <button
+                onClick={() => updateFilters({ view: 'grid' })}
+                className={`p-2 transition-colors ${viewMode === 'grid'
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                title="Grid view"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => updateFilters({ view: 'list' })}
+                className={`p-2 transition-colors ${viewMode === 'list'
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                title="List view"
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
-          {/* Connection Cards Grid */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredConnections.map((connection) => {
-              const technology = getTechnologyByType(connection.type);
-              return (
-                <Card key={connection.id}>
-                  <CardHeader>
-                    <div className="flex items-start gap-3">
-                      <TechnologyIcon type={connection.type} size="md" showBackground />
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="truncate">{connection.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {technology?.name || connection.type}
-                        </p>
+          {/* Grid View */}
+          {viewMode === 'grid' && (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredConnections.map((connection) => {
+                const technology = getTechnologyByType(connection.type);
+                return (
+                  <Card key={connection.id}>
+                    <CardHeader>
+                      <div className="flex items-start gap-3">
+                        <TechnologyIcon type={connection.type} size="md" showBackground />
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="truncate">{connection.name}</CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {technology?.name || connection.type}
+                          </p>
+                        </div>
+                        <Badge variant={connection.is_active ? 'default' : 'destructive'}>
+                          {connection.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
                       </div>
-                      <Badge variant={connection.is_active ? 'default' : 'destructive'}>
-                        {connection.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      <Link href={`/connections/${connection.id}/edit`}>
-                        <Button variant="outline" size="sm">
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        <Link href={`/connections/${connection.id}/edit`}>
+                          <Button variant="outline" size="sm">
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </Button>
+                        </Link>
+                        <Link href={`/connections/${connection.id}/duplicate`}>
+                          <Button variant="outline" size="sm">
+                            <Copy className="mr-2 h-4 w-4" />
+                            Duplicate
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(connection.id, connection.name)}
+                          title="Delete connection (only if no backup operations exist)"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
                         </Button>
-                      </Link>
-                      <Link href={`/connections/${connection.id}/duplicate`}>
-                        <Button variant="outline" size="sm">
-                          <Copy className="mr-2 h-4 w-4" />
-                          Duplicate
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(connection.id, connection.name)}
-                        title="Delete connection (only if no backup operations exist)"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </Button>
-                    </div>
-                    {!connection.is_active && (
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        This connection is inactive and won't be used for new backups
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                      </div>
+                      {!connection.is_active && (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          This connection is inactive and won't be used for new backups
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {/* List View */}
+          {viewMode === 'list' && (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Name</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Type</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
+                    <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredConnections.map((connection) => {
+                    const technology = getTechnologyByType(connection.type);
+                    return (
+                      <tr key={connection.id} className="hover:bg-muted/30">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <TechnologyIcon type={connection.type} size="sm" showBackground />
+                            <span className="font-medium">{connection.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {technology?.name || connection.type}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant={connection.is_active ? 'default' : 'destructive'}>
+                            {connection.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex justify-end gap-2">
+                            <Link href={`/connections/${connection.id}/edit`}>
+                              <Button variant="outline" size="sm" title="Edit">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Link href={`/connections/${connection.id}/duplicate`}>
+                              <Button variant="outline" size="sm" title="Duplicate">
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(connection.id, connection.name)}
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* Empty State: No matches */}
           {filteredConnections.length === 0 && connections.length > 0 && (
@@ -321,6 +412,6 @@ export default function Index({ connections, filters }: Props) {
           )}
         </div>
       </div>
-    </AppLayout>
+    </AppLayout >
   );
 }
